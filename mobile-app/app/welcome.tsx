@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, StyleSheet, Text, View } from 'react-native';
+import Button from './components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -20,7 +21,7 @@ export default function WelcomeScreen() {
                 {/* Top Image */}
                 <View style={styles.imageContainer}>
                     <Image
-                        source={require('../assets/images/welcome-screen.jpg')}
+                        source={require('./assets/images/welcome-screen.jpg')}
                         style={styles.image}
                         resizeMode="contain"
                     />
@@ -38,9 +39,7 @@ export default function WelcomeScreen() {
 
                 {/* Button */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.button} onPress={handleNext}>
-                        <Text style={styles.buttonText}>Let's go</Text>
-                    </TouchableOpacity>
+                    <Button title="Let's go" onPress={handleNext} />
                 </View>
             </View>
         </SafeAreaView>
@@ -101,24 +100,5 @@ const styles = StyleSheet.create({
         width: '100%',
         paddingHorizontal: 30,
         marginBottom: 20,
-    },
-    button: {
-        backgroundColor: '#1EBEA5', // Teal-ish green to match the design roughly
-        paddingVertical: 18,
-        borderRadius: 12,
-        alignItems: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
     },
 });

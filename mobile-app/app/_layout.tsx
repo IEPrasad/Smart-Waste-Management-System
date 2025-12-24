@@ -22,6 +22,10 @@ export default function RootLayout() {
         <Stack.Screen name="role-selection" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth/citizen-login" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/citizen-welcome" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/register-step1" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/driver-login" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/index" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

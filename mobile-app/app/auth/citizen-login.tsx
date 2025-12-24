@@ -14,6 +14,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import Button from '../components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
@@ -26,7 +27,7 @@ export default function CitizenLoginScreen() {
 
     const handleLogin = () => {
         // Implement login logic here later
-        router.replace('/(tabs)/home');
+        router.replace('/citizen' as any);
     };
 
     return (
@@ -41,7 +42,7 @@ export default function CitizenLoginScreen() {
                     <View style={styles.imageContainer}>
                         {/* Placeholder image - reusing role selection or welcome image style */}
                         <Image
-                            source={require('../../assets/images/login_1.jpg')} // Using welcome image as placeholder
+                            source={require('../assets/images/login_1.jpg')} // Using welcome image as placeholder
                             style={styles.image}
                             resizeMode="contain"
                         />
@@ -88,14 +89,12 @@ export default function CitizenLoginScreen() {
                         </TouchableOpacity>
 
                         {/* Login Button */}
-                        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                            <Text style={styles.loginButtonText}>Login</Text>
-                        </TouchableOpacity>
+                        <Button title="Login" onPress={handleLogin} style={{ marginBottom: 20 }} />
 
                         {/* Sign Up Link */}
                         <View style={styles.signupContainer}>
                             <Text style={styles.signupText}>Don't have an account? </Text>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push('/auth/register-step1')}>
                                 <Text style={styles.signupLink}>Sign Up</Text>
                             </TouchableOpacity>
                         </View>
@@ -167,26 +166,6 @@ const styles = StyleSheet.create({
     forgotPasswordText: {
         color: '#1EBEA5',
         fontWeight: '600',
-    },
-    loginButton: {
-        backgroundColor: '#1EBEA5',
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginBottom: 20,
-        shadowColor: '#1EBEA5',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
-        elevation: 8,
-    },
-    loginButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: 'bold',
     },
     signupContainer: {
         flexDirection: 'row',
