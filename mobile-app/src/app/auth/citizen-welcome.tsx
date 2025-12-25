@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from '../components/Button';
+import Button from '../../components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
@@ -34,7 +34,7 @@ export default function CitizenWelcomeScreen() {
                 {/* Illustration */}
                 <View style={styles.imageContainer}>
                     <Image
-                        source={require('../assets/images/citizen.jpg')}
+                        source={require('../../assets/images/citizen.jpg')}
                         style={styles.image}
                         resizeMode="contain"
                     />

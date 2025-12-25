@@ -17,11 +17,11 @@ import * as Location from 'expo-location';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Button from '@/components/Button';
-import ProgressBar from '@/components/ProgressBar';
-import InputField from '@/components/InputField';
-import SelectField from '@/components/SelectField';
-import BackButton from '@/components/BackButton';
+import Button from '../../components/Button';
+import ProgressBar from '../../components/ProgressBar';
+import InputField from '../../components/InputField';
+import SelectField from '../../components/SelectField';
+import BackButton from '../../components/BackButton';
 
 const LOCATION_DATA: { [key: string]: string[] } = {
     "Poddala": ["Poddala (117)", "Penideniya (117C)", "Pannamaga (117B)", "Meepawala (117A)", "Opatha (127B)"],
@@ -93,13 +93,13 @@ export default function RegisterStep2() {
             let location = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High,
             });
-            
+
             setLatitude(location.coords.latitude);
             setLongitude(location.coords.longitude);
             setHomeLocation(
                 `Lat: ${location.coords.latitude.toFixed(6)}, Long: ${location.coords.longitude.toFixed(6)}`
             );
-            
+
             if (errors.homeLocation) {
                 setErrors({ ...errors, homeLocation: undefined });
             }

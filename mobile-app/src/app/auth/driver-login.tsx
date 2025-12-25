@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
@@ -10,12 +9,11 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TextInput,
-    TouchableOpacity,
     View,
 } from 'react-native';
-import Button from '../components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Button from '../../components/Button';
+import AuthInputField from '../../components/AuthInputField';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,7 +26,7 @@ export default function DriverLoginScreen() {
     const handleLogin = () => {
         // Implement driver login logic here
         // For now, navigate to home or driver dashboard
-        router.replace('/driver/index.tsx');
+        router.replace('/driver' as any);
     };
 
     return (
@@ -43,7 +41,7 @@ export default function DriverLoginScreen() {
                     {/* Header Illustration */}
                     <View style={styles.imageContainer}>
                         <Image
-                            source={require('../assets/images/driver_login.jpg')}
+                            source={require('../../assets/images/driver_login.jpg')}
                             style={styles.image}
                             resizeMode="contain"
                         />
@@ -51,57 +49,33 @@ export default function DriverLoginScreen() {
 
                     <View style={styles.contentContainer}>
                         {/* Title Section */}
-                        <Text style={styles.title}>You{'\''}re Continuing as a{"\n"}Driver</Text>
+                        <Text style={styles.title}>You're Continuing as a{"\n"}Driver</Text>
                         <Text style={styles.subtitle}>
                             Login to manage your assigned waste collection tasks securely.
                         </Text>
 
                         {/* Form Section */}
                         <View style={styles.formContainer}>
+                            <AuthInputField
+                                label="Username or Email"
+                                icon="mail-outline"
+                                value={username}
+                                onChangeText={setUsername}
+                                autoCapitalize="none"
+                            />
 
-                            {/* Username Input */}
-                            <Text style={styles.label}>Username</Text>
-                            <View style={styles.inputContainer}>
-                                <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Saman@123"
-                                    placeholderTextColor="#999"
-                                    value={username}
-                                    onChangeText={setUsername}
-                                    autoCapitalize="none"
-                                />
-                            </View>
-
-                            {/* Password Input */}
-                            <Text style={styles.label}>Password</Text>
-                            <View style={styles.inputContainer}>
-                                {/* Using empty view to align text input if no icon on left, 
-                                    but design shows no icon on left for password? 
-                                    Wait, screenshot shows NO icon on left for Password. 
-                                    Just text input and eye icon on right. 
-                                    Username HAS icon on left.
-                                */}
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="*************"
-                                    placeholderTextColor="#999"
-                                    value={password}
-                                    onChangeText={setPassword}
-                                    secureTextEntry={!showPassword}
-                                />
-                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                                    <Ionicons
-                                        name={showPassword ? "eye-off-outline" : "eye-outline"}
-                                        size={20}
-                                        color="#666"
-                                    />
-                                </TouchableOpacity>
-                            </View>
+                            <AuthInputField
+                                label="Password"
+                                icon='lock-closed-outline'
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry={!showPassword}
+                                rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
+                                onRightIconPress={() => setShowPassword(!showPassword)}
+                            />
 
                             {/* Login Button */}
                             <Button title="Log in" onPress={handleLogin} style={{ marginTop: 10 }} />
-
                         </View>
                     </View>
 
@@ -159,32 +133,6 @@ const styles = StyleSheet.create({
     },
     formContainer: {
         marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 8,
-        marginLeft: 4,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        borderRadius: 30, // Rounded pill shape
-        paddingHorizontal: 20,
-        marginBottom: 20,
-        height: 56,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-    },
-    inputIcon: {
-        marginRight: 10,
-    },
-    input: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
     },
     footerContainer: {
         paddingHorizontal: 20,

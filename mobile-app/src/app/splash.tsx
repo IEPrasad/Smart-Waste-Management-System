@@ -47,7 +47,7 @@ export default function Splash({ duration = 5000, onFinish }: Props) {
       <StatusBar hidden />
       <View style={styles.inner}>
         <Animated.Image
-          source={require('./assets/images/logo-icon.png')}
+          source={require('../assets/images/logo-icon.png')}
           style={[styles.logo, { transform: [{ rotate }] }]}
         />
       </View>

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import Button from './components/Button';
+import Button from '../components/Button';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
@@ -29,7 +29,7 @@ export default function RoleSelectionScreen() {
                 {/* Top Image */}
                 <View style={styles.imageContainer}>
                     <Image
-                        source={require('./assets/images/role_selection_header.png')}
+                        source={require('../assets/images/role_selection_header.png')}
                         style={styles.headerImage}
                         resizeMode="contain"
                     />
@@ -57,7 +57,7 @@ export default function RoleSelectionScreen() {
                     >
                         <View style={styles.iconWrapper}>
                             <Image
-                                source={require('./assets/images/citizen_icon.png')}
+                                source={require('../assets/images/citizen_icon.png')}
                                 style={styles.roleIcon}
                                 resizeMode="contain"
                             />
@@ -77,7 +77,7 @@ export default function RoleSelectionScreen() {
                     >
                         <View style={styles.iconWrapper}>
                             <Image
-                                source={require('./assets/images/truck_icon.png')}
+                                source={require('../assets/images/truck_icon.png')}
                                 style={styles.roleIcon}
                                 resizeMode="contain"
                             />
@@ -123,21 +123,21 @@ const styles = StyleSheet.create({
     },
     textContainer: {
         alignItems: 'center',
-        marginBottom: 10,
     },
     title: {
-        fontSize: 28,
+        fontSize: 32,
         fontWeight: 'bold',
         color: '#000',
-        marginBottom: 16,
+        marginTop: -35,
+        marginBottom: 35,
         textAlign: 'center',
     },
     description: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#666',
         textAlign: 'center',
         lineHeight: 20,
-        paddingHorizontal: 10,
+        paddingHorizontal: 0,
     },
     cardsRow: {
         flexDirection: 'row',
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
         padding: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        height: 180, // Square-ish
+        height: 200, // Square-ish
         // Default border transparent
         borderWidth: 2,
         borderColor: 'transparent',

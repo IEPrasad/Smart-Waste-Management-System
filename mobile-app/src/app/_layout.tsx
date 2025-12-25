@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useColorScheme } from '../hooks/use-color-scheme';
 import Splash from './splash';
 
 export const unstable_settings = {
@@ -24,8 +24,11 @@ export default function RootLayout() {
         <Stack.Screen name="auth/citizen-login" options={{ headerShown: false }} />
         <Stack.Screen name="auth/citizen-welcome" options={{ headerShown: false }} />
         <Stack.Screen name="auth/register-step1" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/register-step2" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/register-step3" options={{ headerShown: false }} />
         <Stack.Screen name="auth/driver-login" options={{ headerShown: false }} />
         <Stack.Screen name="citizen/index" options={{ headerShown: false }} />
+        <Stack.Screen name="driver/index" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

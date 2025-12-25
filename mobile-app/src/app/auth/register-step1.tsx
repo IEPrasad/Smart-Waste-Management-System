@@ -10,10 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
-import Button from '@/components/Button';
-import ProgressBar from '@/components/ProgressBar';
-import InputField from '@/components/InputField';
-import BackButton from '@/components/BackButton';
+import Button from '../../components/Button';
+import ProgressBar from '../../components/ProgressBar';
+import InputField from '../../components/InputField';
+import BackButton from '../../components/BackButton';
 
 export default function RegisterStep1() {
     const router = useRouter();
@@ -87,7 +87,7 @@ export default function RegisterStep1() {
     return (
         <SafeAreaView style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
-            
+
             {/* Header */}
             <View style={styles.header}>
                 <BackButton />
@@ -102,7 +102,7 @@ export default function RegisterStep1() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView 
+                <ScrollView
                     contentContainerStyle={styles.content}
                     keyboardShouldPersistTaps="handled"
                 >
