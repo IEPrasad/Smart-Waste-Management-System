@@ -11,23 +11,52 @@ import {
     Text,
     TouchableOpacity,
     View,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
 import AuthInputField from '../../components/AuthInputField';
 import BackButton from '../../components/BackButton';
+import { citizenLogin } from '../../services/authService';
 
 const { width, height } = Dimensions.get('window');
 
-export default function CitizenLoginScreen() {
+export default function CitizenLogin() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        // Implement login logic here later
-        router.replace('/citizen' as any);
+    const handleLogin = async () => {
+        if (!email.trim() || !password.trim()) {
+            Alert.alert("Error", "Please fill in all fields");
+            return;
+        }
+        setLoading(true);
+
+        const result = await citizenLogin(email.trim(), password.trim());
+
+        setLoading(false);
+
+        if (result.success) {
+            // Login හරි, දැන් Status එක බලමු
+            if (result.status === 'approved') {
+                // Approved නම් ඇතුලට යන්න (Dashboard එකට)
+                // ඔයාගේ Dashboard එක 'citizen/index' හෝ '(tabs)' වෙන්න පුළුවන්
+                router.replace('/citizen' as any);
+            } else if (result.status === 'pending') {
+                Alert.alert(
+                    "Account Pending",
+                    "Your account is waiting for admin approval. Please check back later."
+                );
+            } else if (result.status === 'rejected') {
+                Alert.alert("Account Rejected", "Sorry, your registration request has been rejected.");
+            }
+        } else {
+            // Login වැරදියි (Password wrong or User not found)
+            Alert.alert("Login Failed", result.error || "Invalid email or password");
+        }
     };
 
     return (
@@ -184,3 +213,5 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
 });
+
+

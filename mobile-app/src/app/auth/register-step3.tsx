@@ -8,6 +8,7 @@ import {
     Platform,
     TouchableOpacity,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
@@ -17,7 +18,7 @@ import Button from '../../components/Button';
 import ProgressBar from '../../components/ProgressBar';
 import InputField from '../../components/InputField';
 import BackButton from '../../components/BackButton';
-import { supabase } from '../../../lib/supabase';
+import { registerCitizen } from '../../services/authService';
 
 export default function RegisterStep3() {
     const router = useRouter();
@@ -28,6 +29,8 @@ export default function RegisterStep3() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreed, setAgreed] = useState(false);
+
+    const [loading, setLoading] = useState(false);
 
     const [errors, setErrors] = useState<{
         password?: string;
@@ -59,19 +62,45 @@ export default function RegisterStep3() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleCreateAccount = () => {
+    const handleCreateAccount = async () => {
         if (!validate()) return;
+        setLoading(true);
 
-        const registrationData = {
-            ...params,
+        const userData = {
+            fullName: params.fullName as string,
+            email: params.email as string,
+            nic: params.nic as string,
+            mobile: params.mobile as string,
+            assessmentNumber: params.assessmentNumber as string,
+            division: params.division as string,
+            gnDivision: params.gnDivision as string,
+            latitude: params.latitude as string,
+            longitude: params.longitude as string,
             password: password.trim(),
         };
 
-        console.log('Registration Data:', registrationData);
-        Alert.alert('Success', 'Account created successfully!', [
-            { text: 'OK', onPress: () => router.replace('/auth/citizen-login') },
-        ]);
+        try {
+            console.log('Sending Data to Supabase...');
+
+            // Service එක call කිරීම
+            const result = await registerCitizen(userData);
+
+            if (result.success) {
+                Alert.alert(
+                    'Success',
+                    'Account created successfully! Please wait for admin approval.',
+                    [{ text: 'OK', onPress: () => router.replace('/auth/citizen-login') }]
+                );
+            } else {
+                Alert.alert('Registration Failed', result.error);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Something went wrong. Please try again.');
+        } finally {
+            setLoading(false); // Loading නවත්වනවා
+        }
     };
+
 
     return (
         <SafeAreaView style={styles.container}>
