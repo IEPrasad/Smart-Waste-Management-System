@@ -1,0 +1,299 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@700&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Grotesk:wght@300..700&display=swap');
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.login-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-image: url('../assets/images/background.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.background-blur-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    /* Dark overlay */
+    backdrop-filter: blur(4px);
+    /* Little blur as requested */
+    z-index: 1;
+}
+
+.login-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 1200px;
+    height: auto;
+    gap: 150px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Left Section */
+.left-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    color: white;
+    flex: 1;
+    max-width: 550px;
+}
+
+.logo-container {
+    margin-bottom: 20px;
+}
+
+.emblem-logo {
+    width: 140px;
+    height: auto;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.text-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sinhala-title {
+    font-family: 'Abhaya Libre';
+    font-size: 3rem;
+    font-weight: 700;
+    margin: 10px 0;
+    line-height: 1.2;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.english-title {
+    font-size: 1.6rem;
+    font-weight: 500;
+    margin: 5px 0;
+    opacity: 0.95;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.sub-title {
+    font-size: 1.4rem;
+    font-weight: 300;
+    margin-top: 20px;
+    opacity: 0.9;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Divider */
+.vertical-divider {
+    width: 3px;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 2px;
+}
+
+/* Right Section - Login Form */
+.right-section {
+    flex: 1;
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* Align form to left relative to its container? Image shows centered text logic or simple form */
+    /* Wait, the design has labels aligned left */
+}
+
+.login-box {
+    width: 100%;
+    padding: 20px;
+    color: white;
+}
+
+.login-header {
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 40px;
+    text-align: left;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.input-group {
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 55px;
+    /* Space for icons */
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    font-size: 1rem;
+    color: #333;
+    background: white;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.icon-left {
+    position: absolute;
+    left: 15px;
+    display: flex;
+    align-items: center;
+    color: #555;
+    pointer-events: none;
+}
+
+.icon-right {
+    position: absolute;
+    right: 15px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #555;
+}
+
+.icon-right:hover {
+    color: #333;
+}
+
+.forgot-password {
+    text-align: right;
+    margin-bottom: 25px;
+}
+
+.forgot-password a {
+    color: #ddd;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.forgot-password a:hover {
+    text-decoration: underline;
+    color: white;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 25px;
+    border: none;
+    background-color: #00e5c0;
+    /* Cyan/Teal color from image */
+    color: #000;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.2s;
+    font-family: 'Inter', sans-serif;
+    /* Monospace feeling in image for "Log in"? No, looks standard sans-serif bold */
+}
+
+.login-btn:hover {
+    background-color: #00c7a6;
+    transform: scale(1.02);
+}
+
+.login-btn:active {
+    transform: scale(0.98);
+}
+
+.access-warning {
+    margin-top: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #d32f2f;
+
+}
+
+.lock-icon {
+    font-size: 0.8rem;
+}
+
+/* Footer */
+.login-footer {
+    position: absolute;
+    bottom: 20px;
+    z-index: 2;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+    .login-container {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .vertical-divider {
+        display: none;
+    }
+
+    .left-section {
+        margin-bottom: 20px;
+    }
+
+    .sinhala-title {
+        font-size: 2rem;
+    }
+
+    .english-title {
+        font-size: 1.4rem;
+    }
+
+    .right-section {
+        width: 100%;
+        align-items: center;
+    }
+
+    .login-box {
+        max-width: 100%;
+    }
+
+    .login-header {
+        text-align: center;
+    }
+}
