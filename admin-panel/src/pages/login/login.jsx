@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './login.css';
-import backgroundImage from '../assets/images/background.jpg';
-import emblem from '../assets/images/Emblem.png';
+import backgroundImage from '../../assets/images/background.jpg';
+import emblem from '../../assets/images/Emblem.png';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
 import EyeIcon from '@mui/icons-material/RemoveRedEye';
