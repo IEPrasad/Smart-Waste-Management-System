@@ -6,11 +6,17 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import * as Location from 'expo-location';
 import { supabase } from '../../../lib/supabase';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import PickupActionModal from './components/PickupActionModal';
 import WelcomeStartModal from './components/WelcomeStartModal';
+import DriverProfileModal from './components/DriverProfileModal';
+import DriverHistoryModal from './components/DriverHistoryModal'; // <<< IMPORT NEW COMPONENT
+
+/* <<< ADDED IMPORTS FOR MESSAGING >>> */
+import DriverMessagesModal from './components/DriverMessagesModal'; // List
+import DriverChatModal from './components/DriverChatModal';         // Chat Window
 
 const { width, height } = Dimensions.get('window');
 // ⚠️ Ensure "Directions API" is enabled in Google Cloud Console
@@ -45,7 +51,7 @@ export default function DriverHomeScreen() {
     const [hasStarted, setHasStarted] = useState(false);
     const [currentLocation, setCurrentLocation] = useState<LocationState | null>(null);
 
-    // Camera Mode State (Driver vs Aerial)
+    // Camera Mode State
     const [isDriverMode, setIsDriverMode] = useState(true);
 
     const [pickups, setPickups] = useState<any[]>([]);
@@ -54,7 +60,18 @@ export default function DriverHomeScreen() {
 
     const [currentTarget, setCurrentTarget] = useState<any>(null);
     const [selectedPickup, setSelectedPickup] = useState<any>(null);
+
+    // Modal Visibilities
     const [isPopupVisible, setPopupVisible] = useState(false);
+    const [isProfileVisible, setProfileVisible] = useState(false);
+    const [isHistoryVisible, setHistoryVisible] = useState(false); // <<< NEW STATE
+
+    /* <<< ADDED MESSAGE/CHAT STATES >>> */
+    const [isMessagesVisible, setMessagesVisible] = useState(false); // Shows list
+    const [isChatVisible, setChatVisible] = useState(false);         // Shows chat window
+    const [chatPickup, setChatPickup] = useState<any>(null);         // Stores which citizen we are chatting with
+
+    const router = useRouter();
 
     // 2. INITIAL DATA LOAD & TRACKING
     useEffect(() => {
@@ -97,10 +114,9 @@ export default function DriverHomeScreen() {
                         heading: heading || 0
                     });
 
-                    // CAMERA LOGIC: DRIVER MODE vs AERIAL MODE
+                    // CAMERA LOGIC
                     if (hasStarted && mapRef.current) {
                         if (isDriverMode) {
-                            // DRIVER VIEW: Tilted, zoomed in, follows rotation
                             mapRef.current.animateCamera({
                                 center: { latitude, longitude },
                                 pitch: 50,
@@ -108,12 +124,10 @@ export default function DriverHomeScreen() {
                                 zoom: 19,
                             }, { duration: 500 });
                         } else {
-                            // AERIAL VIEW: Top-down, North up, slightly zoomed out
-                            // We only update center so they don't get lost, but keep map flat
                             mapRef.current.animateCamera({
                                 center: { latitude, longitude },
                                 pitch: 0,
-                                heading: 0, // Keeps North up
+                                heading: 0,
                                 zoom: 15,
                             }, { duration: 500 });
                         }
@@ -138,7 +152,7 @@ export default function DriverHomeScreen() {
         return () => {
             if (locationSubscription) locationSubscription.remove();
         };
-    }, [hasStarted, isDriverMode]); // Dependent on isDriverMode to switch styles instantly
+    }, [hasStarted, isDriverMode]);
 
     // 3. FETCH PICKUPS
     const fetchPickups = async (uid: string | undefined) => {
@@ -184,7 +198,7 @@ export default function DriverHomeScreen() {
             const nearest = findNearestPickup(currentLocation.latitude, currentLocation.longitude, pickups);
             setCurrentTarget(nearest);
         }
-        setIsDriverMode(true); // Default to driver mode on start
+        setIsDriverMode(true);
         setHasStarted(true);
     };
 
@@ -269,13 +283,11 @@ export default function DriverHomeScreen() {
         }
     };
 
-    // Toggle Camera Function
+    // Toggle Camera
     const toggleViewMode = () => {
         const newMode = !isDriverMode;
         setIsDriverMode(newMode);
-
         if (currentLocation && mapRef.current) {
-            // Apply instant change without waiting for next GPS update
             mapRef.current.animateCamera({
                 center: { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
                 pitch: newMode ? 50 : 0,
@@ -285,6 +297,35 @@ export default function DriverHomeScreen() {
         }
     };
 
+    // Logout
+    const handleLogout = async () => {
+        if (driverId) {
+            await supabase.from('drivers').update({ is_online: false }).eq('id', driverId);
+        }
+        await supabase.auth.signOut();
+        setProfileVisible(false);
+        Alert.alert("Logged Out", "You have been logged out successfully.");
+    };
+
+    // <<< HANDLER FOR HISTORY BUTTON >>>
+    const openHistory = () => {
+        setProfileVisible(false); // Close profile first
+        setHistoryVisible(true);  // Open history
+    };
+
+    /* <<< ADDED MESSAGE/CHAT HANDLERS >>> */
+    // Handle opening the Message List
+    const handleOpenMessages = () => {
+        setMessagesVisible(true);
+    };
+
+    // Handle clicking a row in the list -> Opens chat
+    const handleOpenChat = (pickupData: any) => {
+        setChatPickup(pickupData);
+        setChatVisible(true);
+    };
+    /* <<< END ADDED >>> */
+
     // --- RENDER ---
     return (
         <View style={styles.container}>
@@ -292,13 +333,13 @@ export default function DriverHomeScreen() {
 
             {/* HEADER */}
             <View style={styles.headerBar}>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => console.log("Msgs")}>
+                <TouchableOpacity style={styles.iconBtn} onPress={handleOpenMessages}>
                     <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
                 </TouchableOpacity>
                 <View style={{ alignItems: 'center' }}>
                     <Text style={styles.headerTitle}>{pickups.length} Jobs Remaining</Text>
                 </View>
-                <TouchableOpacity onPress={() => console.log("Profile")}>
+                <TouchableOpacity onPress={() => setProfileVisible(true)}>
                     <View style={styles.profileCircle}>
                         <FontAwesome5 name="user" size={18} color="#555" />
                     </View>
@@ -315,10 +356,8 @@ export default function DriverHomeScreen() {
                     showsUserLocation={false}
                     showsMyLocationButton={false}
                     showsCompass={false}
-                    // Disable rotation gestures in driver mode to prevent fighting auto-rotate
                     rotateEnabled={!isDriverMode}
                 >
-                    {/* CUSTOM DRIVER ARROW */}
                     <Marker.Animated
                         coordinate={currentLocation}
                         anchor={{ x: 0.5, y: 0.5 }}
@@ -330,17 +369,14 @@ export default function DriverHomeScreen() {
                         </View>
                     </Marker.Animated>
 
-                    {/* PICKUP PINS */}
                     {hasStarted && pickups.map((item) => {
-                        // Check if this specific item is the current target
                         const isTarget = currentTarget?.id === item.id;
                         return (
                             <Marker
-                                // 💡 FORCE RE-RENDER COLOR: Change key when status changes
                                 key={`${item.id}-${isTarget ? 'blue' : 'red'}`}
                                 coordinate={{ latitude: item.lat, longitude: item.lng }}
                                 title={item.citizen_name}
-                                pinColor={isTarget ? "blue" : "red"} // Blue for next, Red for others
+                                pinColor={isTarget ? "blue" : "red"}
                                 onPress={() => {
                                     if (isTarget) {
                                         setSelectedPickup(item);
@@ -351,7 +387,6 @@ export default function DriverHomeScreen() {
                         );
                     })}
 
-                    {/* BLUE ROUTE LINE */}
                     {hasStarted && currentTarget && (
                         <MapViewDirections
                             origin={currentLocation}
@@ -365,7 +400,6 @@ export default function DriverHomeScreen() {
                 </MapView>
             )}
 
-            {/* TOGGLE VIEW BUTTON (Floating Bottom Right) */}
             {hasStarted && (
                 <TouchableOpacity style={styles.viewToggleBtn} onPress={toggleViewMode}>
                     <MaterialCommunityIcons
@@ -390,6 +424,34 @@ export default function DriverHomeScreen() {
                 onClose={() => setPopupVisible(false)}
                 onComplete={handleCompletePickup}
                 onSkip={handleSkipPickup}
+            />
+
+            <DriverProfileModal
+                visible={isProfileVisible}
+                onClose={() => setProfileVisible(false)}
+                onHistoryPress={openHistory} // <<< Connect Logic
+                onLogout={handleLogout}
+            />
+
+            {/* <<< NEW HISTORY MODAL >>> */}
+            <DriverHistoryModal
+                visible={isHistoryVisible}
+                onClose={() => setHistoryVisible(false)}
+                driverId={driverId}
+            />
+
+            {/* <<< ADDED MESSAGE MODALS >>> */}
+            <DriverMessagesModal
+                visible={isMessagesVisible}
+                onClose={() => setMessagesVisible(false)}
+                onOpenChat={handleOpenChat}
+            />
+
+            <DriverChatModal
+                visible={isChatVisible}
+                pickup={chatPickup}
+                driverId={driverId}
+                onClose={() => setChatVisible(false)}
             />
         </View>
     );
@@ -423,7 +485,6 @@ const styles = StyleSheet.create({
         borderWidth: 2, borderColor: 'white',
         elevation: 5, shadowColor: 'black', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 2 }
     },
-    // NEW BUTTON STYLE
     viewToggleBtn: {
         position: 'absolute',
         bottom: 40,
