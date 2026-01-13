@@ -11,13 +11,10 @@
 
     "ios": {
       "supportsTablet": true,
-<<<<<<< HEAD
-      "bundleIdentifier": "com.anonymous.WastE-wise-app"
-=======
+      "bundleIdentifier": "com.anonymous.WastE-wise-app",
       "config": {
         "googleMapsApiKey": "YOUR_IOS_API_KEY_HERE"
       }
->>>>>>> bf561683b904734ced57c37016e8419966a0cc89
     },
 
     "android": {
@@ -29,15 +26,12 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-<<<<<<< HEAD
-      "package": "com.anonymous.WastEwiseapp"
-=======
+      "package": "com.anonymous.WastEwiseapp",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyAWAwQ3RBtI20uUUGyLwedbqihPvpol3pw"
         }
       }
->>>>>>> bf561683b904734ced57c37016e8419966a0cc89
     },
 
     "web": {
