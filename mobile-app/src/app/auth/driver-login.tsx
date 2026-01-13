@@ -23,10 +23,15 @@ export default function DriverLoginScreen() {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
+    const [loading, setLoading] = useState(false);
+
     const handleLogin = () => {
-        // Implement driver login logic here
-        // For now, navigate to home or driver dashboard
-        router.replace('/driver' as any);
+        setLoading(true);
+        // Simulate network request
+        setTimeout(() => {
+            setLoading(false);
+            router.replace('/driver' as any);
+        }, 1500);
     };
 
     return (
@@ -75,7 +80,7 @@ export default function DriverLoginScreen() {
                             />
 
                             {/* Login Button */}
-                            <Button title="Log in" onPress={handleLogin} style={{ marginTop: 10 }} />
+                            <Button title="Log in" onPress={handleLogin} style={{ marginTop: 10 }} isLoading={loading} />
                         </View>
                     </View>
 
