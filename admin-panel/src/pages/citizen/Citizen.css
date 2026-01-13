@@ -1,0 +1,18 @@
+.citizen-container {
+    padding: 15px;
+    width: 100%;
+}
+
+.citizen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.citizen-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #000;
+    margin: 0;
+}
