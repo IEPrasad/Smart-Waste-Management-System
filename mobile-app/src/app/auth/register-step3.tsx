@@ -208,7 +208,7 @@ export default function RegisterStep3() {
 
                 {/* Footer Button - Fixed at bottom */}
                 <View style={styles.footer}>
-                    <Button title="Create Account" onPress={handleCreateAccount} />
+                    <Button title="Create Account" onPress={handleCreateAccount} isLoading={loading} />
                 </View>
             </View>
         </SafeAreaView>

@@ -1,0 +1,218 @@
+.citizen-table__wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.citizen-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.citizen-table thead {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.citizen-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.citizen-table td {
+    padding: 16px 20px;
+    font-size: 14px;
+    color: #1f2937;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.citizen-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.citizen-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+.citizen-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Citizen Info Cell */
+.citizen-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.citizen-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+}
+
+.citizen-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.citizen-name {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 14px;
+}
+
+.citizen-assessment {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* Loading State */
+.citizen-table__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    gap: 16px;
+    color: #6b7280;
+}
+
+.citizen-table__spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Empty State */
+.citizen-table__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    color: #9ca3af;
+    font-size: 15px;
+}
+
+/* View Button - Green */
+.view-btn {
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #16a34a;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.view-btn:hover {
+    background: #16a34a;
+    color: #ffffff;
+    border-color: #16a34a;
+}
+
+/* Pagination */
+.citizen-table__container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.pagination__info {
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.pagination__controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.pagination__btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.pagination__btn:hover:not(:disabled) {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.pagination__btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination__page {
+    min-width: 36px;
+    padding: 8px 12px;
+    text-align: center;
+}
+
+.pagination__page--active {
+    background: #3b82f6;
+    color: #ffffff;
+    border-color: #3b82f6;
+}
+
+.pagination__page--active:hover:not(:disabled) {
+    background: #2563eb;
+    border-color: #2563eb;
+}
+
+.pagination__ellipsis {
+    padding: 0 4px;
+    color: #9ca3af;
+}
