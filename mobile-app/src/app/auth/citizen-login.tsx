@@ -111,7 +111,7 @@ export default function CitizenLogin() {
                             </TouchableOpacity>
 
                             {/* Login Button */}
-                            <Button title="Log in" onPress={handleLogin} style={{ marginTop: 10 }} />
+                            <Button title="Log in" onPress={handleLogin} style={{ marginTop: 10 }} isLoading={loading} />
 
                         </View>
                     </View>

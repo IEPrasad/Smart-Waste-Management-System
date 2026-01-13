@@ -6,9 +6,10 @@ import Layout from './layout/Layout';
 // Assuming Login exists in pages/login/login.jsx based on file listing.
 import Login from './pages/login/login';
 
+import Drivers from './pages/Driver/Drivers';
+import Citizen from './pages/citizen/Citizen';
+
 const Dashboard = () => <h2>Dashboard</h2>;
-const Citizen = () => <h2>Citizens List</h2>;
-const Drivers = () => <h2>Drivers List</h2>;
 const Schedule = () => <h2>Schedules</h2>;
 const Issues = () => <h2>Issues</h2>;
 

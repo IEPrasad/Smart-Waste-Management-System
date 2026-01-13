@@ -8,9 +8,15 @@
     "scheme": "wastewiseapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.WastE-wise-app",
+      "config": {
+        "googleMapsApiKey": "YOUR_IOS_API_KEY_HERE"
+      }
     },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -19,12 +25,20 @@
         "monochromeImage": "./src/assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.WastEwiseapp",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAWAwQ3RBtI20uUUGyLwedbqihPvpol3pw"
+        }
+      }
     },
+
     "web": {
       "output": "static",
       "favicon": "./src/assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
       [
@@ -41,6 +55,7 @@
       ],
       "expo-secure-store"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
