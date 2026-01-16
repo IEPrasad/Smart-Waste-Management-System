@@ -64,7 +64,7 @@ export default function DriverLoginScreen() {
 
             // 2) Check the drivers table - ensure the authenticated user is a driver
             const { data: driver, error: driverError } = await supabase
-                .from('drivers')
+                .from('driver')
                 .select('*')
                 .eq('id', userId)
                 .single();

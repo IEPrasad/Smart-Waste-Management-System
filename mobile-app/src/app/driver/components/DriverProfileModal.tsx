@@ -5,6 +5,8 @@ import {
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 
+import EditProfileModal from './EditProfileModal'; // ✅ NEW IMPORT
+
 const { width } = Dimensions.get('window');
 
 interface DriverProfileModalProps {
@@ -18,6 +20,8 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
 
+    const [isEditVisible, setEditVisible] = useState(false); // ✅ NEW STATE
+
     // Fetch Full Profile + Vehicle Details when opened
     useEffect(() => {
         if (visible) {
@@ -30,13 +34,12 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
-            // JOIN Query: Get Driver + Linked Vehicle
             const { data, error } = await supabase
-                .from('drivers')
+                .from('driver')
                 .select(`
                     full_name,
                     email,
-                    phone,
+                    mobile_number,
                     vehicles (
                         vehicle_no,
                         model,
@@ -72,16 +75,22 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
                             {/* --- SECTION 1: DRIVER DETAILS --- */}
                             <Text style={styles.sectionTitle}>Driver Details</Text>
                             <View style={styles.driverRow}>
-                                {/* Default Profile Icon */}
                                 <View style={styles.avatarCircle}>
                                     <FontAwesome5 name="user" size={30} color="#fff" />
                                 </View>
 
-                                {/* Text Details */}
                                 <View style={styles.driverInfo}>
                                     <Text style={styles.nameText}>{profile?.full_name || "Driver"}</Text>
                                     <Text style={styles.detailText}>{profile?.email}</Text>
-                                    <Text style={styles.detailText}>{profile?.phone || "No phone"}</Text>
+                                    <Text style={styles.detailText}>{profile?.mobile_number || "No phone"}</Text>
+
+                                    {/* ✅ ADD EDIT PROFILE BUTTON */}
+                                    <TouchableOpacity
+                                        style={styles.editSmallBtn}
+                                        onPress={() => setEditVisible(true)}
+                                    >
+                                        <Text style={styles.editSmallBtnText}>Edit Profile</Text>
+                                    </TouchableOpacity>
                                 </View>
                             </View>
 
@@ -118,6 +127,14 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
                             </TouchableOpacity>
                         </>
                     )}
+
+                    {/* ✅ EDIT PROFILE MODAL */}
+                    <EditProfileModal
+                        visible={isEditVisible}
+                        onClose={() => setEditVisible(false)}
+                        currentEmail={profile?.email}
+                        currentPhone={profile?.mobile_number}
+                    />
                 </View>
             </TouchableOpacity>
         </Modal>
@@ -151,6 +168,22 @@ const styles = StyleSheet.create({
     driverInfo: { flex: 1 },
     nameText: { fontSize: 20, fontWeight: 'bold', color: '#333' },
     detailText: { fontSize: 14, color: '#666', marginTop: 2 },
+
+    /* ✅ NEW STYLES ONLY */
+    editSmallBtn: {
+        marginTop: 8,
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#00e5bc',
+        alignSelf: 'flex-start'
+    },
+    editSmallBtnText: {
+        fontSize: 12,
+        color: '#00e5bc',
+        fontWeight: 'bold'
+    },
 
     divider: { height: 1, backgroundColor: '#eee', marginVertical: 15 },
 
