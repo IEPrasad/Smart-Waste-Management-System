@@ -1,5 +1,6 @@
 
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import "./sidebar.css";
 import logo from '../../assets/images/logo.png';
 import HomeIcon from '@mui/icons-material/Home';
@@ -9,8 +10,20 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import SyncProblemIcon from '@mui/icons-material/SyncProblem';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { NavLink } from "react-router-dom";
+import { signOutAdmin } from "../../services/authService";
 
 const Sidebar = () => {
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        const result = await signOutAdmin();
+        if (result.success) {
+            navigate('/login');
+        } else {
+            alert('Failed to logout. Please try again.');
+        }
+    };
+
     return (
         <div className="sidebar">
             <div className="top-header">
@@ -19,7 +32,7 @@ const Sidebar = () => {
             </div>
             <div className="sidebar-menu">
                 <ul className="list">
-                    <NavLink to="/" className="link" end>
+                    <NavLink to="/dashboard" className="link" end>
                         {({ isActive }) => (
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <HomeIcon className="icon" />
@@ -28,7 +41,7 @@ const Sidebar = () => {
                         )}
                     </NavLink>
 
-                    <NavLink to="/citizen" className="link">
+                    <NavLink to="/dashboard/citizen" className="link">
                         {({ isActive }) => (
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <GroupsIcon className="icon" />
@@ -36,7 +49,7 @@ const Sidebar = () => {
                             </li>
                         )}
                     </NavLink>
-                    <NavLink to="/drivers" className="link">
+                    <NavLink to="/dashboard/drivers" className="link">
                         {({ isActive }) => (
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <AgricultureIcon className="icon" />
@@ -44,7 +57,7 @@ const Sidebar = () => {
                             </li>
                         )}
                     </NavLink>
-                    <NavLink to="/schedule" className="link">
+                    <NavLink to="/dashboard/schedule" className="link">
                         {({ isActive }) => (
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <CalendarMonthIcon className="icon" />
@@ -52,7 +65,7 @@ const Sidebar = () => {
                             </li>
                         )}
                     </NavLink>
-                    <NavLink to="/issues" className="link">
+                    <NavLink to="/dashboard/issues" className="link">
                         {({ isActive }) => (
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <SyncProblemIcon className="icon" />
@@ -63,7 +76,7 @@ const Sidebar = () => {
                 </ul>
             </div>
             <div className="sidebar-bottom">
-                <div className="logout-container">
+                <div className="logout-container" onClick={handleLogout} style={{ cursor: 'pointer' }}>
                     <LogoutIcon className="icon logout-icon" />
                     <span>Logout</span>
                 </div>
@@ -73,3 +86,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
