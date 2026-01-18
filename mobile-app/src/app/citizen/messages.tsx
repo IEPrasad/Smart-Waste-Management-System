@@ -210,6 +210,7 @@ export default function CitizenChatScreen() {
 }
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
     container: { flex: 1, backgroundColor: '#F3F4F6' },
     header: {
         flexDirection: 'row', alignItems: 'center', padding: 15,
@@ -251,3 +252,149 @@ const styles = StyleSheet.create({
     lockedContainer: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10 },
     lockedText: { color: '#6B7280', fontSize: 13, marginLeft: 6, fontStyle: 'italic' }
 });
+=======
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  driverCard: {
+    backgroundColor: '#10B981',
+    marginHorizontal: 14,
+    marginTop: 12,
+    borderRadius: 14,
+    padding: 16,
+  },
+  driverInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  driverDetails: {
+    flex: 1,
+  },
+  driverName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  driverId: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    marginHorizontal: 14,
+    marginTop: 12,
+    gap: 10,
+  },
+  callButton: {
+    flex: 1,
+    backgroundColor: '#3B82F6',
+    borderRadius: 10,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  callButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  smsButton: {
+    flex: 1,
+    backgroundColor: '#10B981',
+    borderRadius: 10,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  smsButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  section: {
+    paddingHorizontal: 14,
+    marginTop: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 10,
+  },
+  quickMessageButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  quickMessageText: {
+    fontSize: 14,
+    color: '#000000',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 50,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    gap: 8,
+  },
+  messageInput: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 15,
+    maxHeight: 100,
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#10B981',
+    justifyContent: 'center',
+    alignItems: 'center',
+
+>>>>>>> e7393df1d1cc80afebee49cc1c0fda8c9ef114a5
