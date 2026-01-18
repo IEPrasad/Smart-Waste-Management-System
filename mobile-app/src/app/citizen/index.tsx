@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -21,22 +21,22 @@ export default function CitizenHomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
-      
+
       {/* Header */}
       <ThemedView style={styles.header}>
         <View style={styles.headerTextContainer}>
           <ThemedText type="title">Welcome, User</ThemedText>
           <ThemedText style={styles.subtitleText}>Your waste pickup assistant</ThemedText>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.logoutButton}
-          //onPress={() => router.replace('/welcome')}
+        //onPress={() => router.replace('/welcome')}
         >
           <Ionicons name="power" size={26} color="#EF4444" />
         </TouchableOpacity>
       </ThemedView>
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
       >
@@ -61,12 +61,12 @@ export default function CitizenHomeScreen() {
         {/* Quick Actions */}
         <View style={styles.quickActionsContainer}>
           <ThemedText type="subtitle" style={styles.quickActionsTitle}>Quick Actions</ThemedText>
-          
+
           <View style={styles.actionButtonsRow}>
             {/* Schedule Pickup */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.actionButton, 
+                styles.actionButton,
                 { backgroundColor: colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF' }
               ]}
               onPress={() => router.push('/citizen/schedule-pickup')}
@@ -78,7 +78,7 @@ export default function CitizenHomeScreen() {
             </TouchableOpacity>
 
             {/* Sort Trash */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.actionButton,
                 { backgroundColor: colorScheme === 'dark' ? '#1E1E1E' : '#FFFFFF' }
@@ -104,7 +104,7 @@ export default function CitizenHomeScreen() {
           <ThemedText style={[styles.navText, { color: themeColors.tint, fontWeight: '600' }]}>Home</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.push('/citizen/report-issue')}
         >
@@ -112,7 +112,7 @@ export default function CitizenHomeScreen() {
           <ThemedText style={styles.navText}>Report</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.push('/citizen/reward-history')}
         >
@@ -120,7 +120,7 @@ export default function CitizenHomeScreen() {
           <ThemedText style={styles.navText}>Rewards</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.push('/citizen/messages')}
         >
@@ -128,7 +128,7 @@ export default function CitizenHomeScreen() {
           <ThemedText style={styles.navText}>Messages</ThemedText>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navItem}
           onPress={() => router.push('/citizen/user-profile')}
         >
