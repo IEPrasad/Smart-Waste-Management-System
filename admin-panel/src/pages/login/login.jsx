@@ -7,10 +7,9 @@ import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
 import EyeIcon from '@mui/icons-material/RemoveRedEye';
 import EyeSlashIcon from '@mui/icons-material/RemoveRedEyeOutlined';
+import Alert from '@mui/material/Alert';
 
-
-
-import { supabase } from '../../lib/supabaseClient';
+import { signInAdmin } from '../../services/authService';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -18,70 +17,56 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
-    const [isSignUp, setIsSignUp] = useState(false);
+    const [alert, setAlert] = useState({ show: false, type: 'error', message: '' });
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
 
-    const handleAuth = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setAlert({ show: false, type: 'error', message: '' });
 
-        try {
-            if (isSignUp) {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                });
-                if (error) throw error;
+        const result = await signInAdmin(email, password);
 
-                // Allow the user to act as admin. 
-                // Insert into admin table. (Assuming table name is 'admin' and columns 'id', 'email')
-                if (data.user) {
-                    const { error: insertError } = await supabase
-                        .from('admin')
-                        .insert([{ id: data.user.id, email: email }]);
-
-                    if (insertError) {
-                        console.error("Error adding to admin table:", insertError);
-                        // Optional: clean up auth user if admin insert fails
-                    }
-                }
-
-                alert("Account created! Please check your email to confirm your account before logging in.");
-                setIsSignUp(false);
-            } else {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-
-                // Check if user is in admin table
-                const { data: adminData, error: adminError } = await supabase
-                    .from('admin')
-                    .select('id')
-                    .eq('id', data.user.id)
-                    .single();
-
-                if (adminError || !adminData) {
-                    await supabase.auth.signOut();
-                    throw new Error("Unauthorized: Access restricted to system administrators.");
-                }
-
-                navigate('/');
-            }
-        } catch (error) {
-            alert(error.message);
-        } finally {
-            setIsLoading(false);
+        if (result.success) {
+            setAlert({ show: true, type: 'success', message: 'Login successful! Redirecting...' });
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 1000);
+        } else {
+            setAlert({ show: true, type: 'error', message: result.error });
+            // Auto-hide error after 5 seconds
+            setTimeout(() => {
+                setAlert({ show: false, type: 'error', message: '' });
+            }, 5000);
         }
+
+        setIsLoading(false);
     };
 
     return (
         <div className="login-wrapper">
+            {alert.show && (
+                <Alert
+                    severity={alert.type}
+                    onClose={() => setAlert({ show: false, type: 'error', message: '' })}
+                    sx={{
+                        position: 'fixed',
+                        top: '20px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        zIndex: 1000,
+                        minWidth: '300px',
+                        maxWidth: '500px',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                    }}
+                >
+                    {alert.message}
+                </Alert>
+            )}
             <div className="background-blur-overlay"></div>
 
             <div className="login-container">
@@ -106,9 +91,9 @@ const Login = () => {
 
                 <div className="right-section">
                     <div className="login-box">
-                        <h2 className="login-header">{isSignUp ? 'Create Admin Account' : 'Admin Portal Login'}</h2>
+                        <h2 className="login-header">Admin Portal Login</h2>
 
-                        <form className="login-form" onSubmit={handleAuth}>
+                        <form className="login-form" onSubmit={handleLogin}>
                             <div className="input-group">
                                 <label>Email</label>
                                 <div className="input-wrapper">
@@ -140,25 +125,13 @@ const Login = () => {
                                 </div>
                             </div>
 
-                            {!isSignUp && (
-                                <div className="forgot-password">
-                                    <a href="#">Forgot Password?</a>
-                                </div>
-                            )}
+                            <div className="forgot-password">
+                                <a href="#">Forgot Password?</a>
+                            </div>
 
                             <button type="submit" className="login-btn" disabled={isLoading}>
-                                {isLoading ? 'Processing...' : (isSignUp ? 'Sign Up' : 'Log in')}
+                                {isLoading ? 'Signing in...' : 'Sign In'}
                             </button>
-
-                            <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '0.9rem' }}>
-                                {isSignUp ? "Already have an account? " : "Don't have an account? "}
-                                <span
-                                    onClick={() => setIsSignUp(!isSignUp)}
-                                    style={{ color: '#007bff', cursor: 'pointer', fontWeight: 'bold' }}
-                                >
-                                    {isSignUp ? "Log In" : "Sign Up"}
-                                </span>
-                            </div>
                         </form>
 
                         <div className="access-warning">
