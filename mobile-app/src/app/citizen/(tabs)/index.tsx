@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
-export default function CitizenIndex() {
+export default function Index() {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
 
