@@ -1,0 +1,120 @@
+.sidebar {
+    position: fixed;
+    top: 0;
+    /* Below header */
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    background-color: #555;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    /* User requested no borders on sidebar itself */
+    /* box-shadow: 2px 0 5px rgba(0,0,0,0.05); */
+}
+
+.top-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-top: 5px;
+    margin-bottom: 20px;
+}
+
+.sidebar-logo {
+    height: 40px;
+    width: auto;
+}
+
+.sidebar-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.sidebar-menu {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.list {
+    list-style: none;
+    padding: 5px 0 0 0;
+    /* Added top padding to move list down */
+    margin: 0;
+}
+
+/* .title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    margin: 10px 0 5px 10px;
+} */
+
+.link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    margin-bottom: 5px;
+    /* Keeping logical margin, increasing visual gap via padding in list-item if preferred, otherwise I'll change this. User asked to increase space between items. */
+    margin-bottom: 12px;
+    /* Increased from 5px */
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #fff;
+}
+
+.list-item:hover {
+    background-color: #f0f2f5;
+    color: #555;
+}
+
+.active-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 8px;
+    background-color: #fff;
+    /* Light blue accent */
+    color: #09cc1c;
+    font-weight: 500;
+}
+
+.icon {
+    margin-right: 15px;
+    font-size: 20px;
+}
+
+.sidebar-bottom {
+    padding: 10px;
+    border-top: 2px solid #f0f0f0;
+    /* Optional separator for logout */
+}
+
+.logout-container {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #d32f2f;
+    font-weight: bold;
+    /* Red for logout */
+    transition: background 0.2s;
+}
+
+.logout-container:hover {
+    background-color: #ffebee;
+}
+
+.logout-icon {
+    margin-right: 15px;
+}
