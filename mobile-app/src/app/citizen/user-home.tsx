@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     StatusBar,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,28 +28,40 @@ export default function UserHomeScreen() {
     const [isDriverOnline, setIsDriverOnline] = useState<boolean>(false);
     const [distance, setDistance] = useState<string | null>(null);
     const [assignedDriverId, setAssignedDriverId] = useState<string | null>(null);
+    const [activePickup, setActivePickup] = useState<any>(null); // Stores today's pickup object
 
     React.useEffect(() => {
         router.setParams({ headerShown: 'false' });
         fetchInitialData();
     }, []);
 
-    // 1. Get Initial Data (Citizen + Assignment)
+    // 1. Get Initial Data (Citizen + Today's Assignment)
     const fetchInitialData = async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
+        const today = new Date().toISOString().split('T')[0];
+
         const { data: citizen } = await supabase.from('citizens').select('*').eq('id', user.id).single();
         if (citizen) {
             setCitizenData(citizen);
+
+            // Logic: Find a pickup specifically for TODAY that isn't completed
             const { data: pickup } = await supabase
                 .from('pickups')
-                .select('driver_id')
+                .select(`
+                    *,
+                    driver ( id, full_name, is_online )
+                `)
                 .eq('citizen_id', citizen.id)
+                .eq('scheduled_date', today)
                 .neq('status', 'completed')
                 .maybeSingle();
 
-            if (pickup?.driver_id) setAssignedDriverId(pickup.driver_id);
+            if (pickup) {
+                setActivePickup(pickup);
+                if (pickup.driver?.id) setAssignedDriverId(pickup.driver.id);
+            }
         }
     };
 
@@ -82,6 +95,29 @@ export default function UserHomeScreen() {
         const interval = setInterval(poll, 5000);
         return () => clearInterval(interval);
     }, [assignedDriverId, citizenData]);
+
+    // 3. CHAT DISCOVERY LOGIC
+    const handleOpenChat = () => {
+        if (!activePickup) {
+            Alert.alert("No Active Pickup", "You don't have a pickup scheduled for today.");
+            return;
+        }
+
+        if (!isDriverOnline) {
+            Alert.alert("Driver Offline", "The assigned driver is not currently online.");
+            return;
+        }
+
+        // Navigate to the chat screen with the context
+        router.push({
+            pathname: '/citizen/messages',
+            params: {
+                pickupId: activePickup.id,
+                driverId: assignedDriverId,
+                driverName: activePickup.driver?.full_name
+            }
+        });
+    };
 
     return (
         <View style={styles.container}>
@@ -190,8 +226,8 @@ export default function UserHomeScreen() {
                     <Text style={styles.navText}>History</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.navItem} onPress={() => router.push('/citizen/messages')}>
-                    <Ionicons name="mail-outline" size={28} color="#9CA3AF" />
+                <TouchableOpacity style={styles.navItem} onPress={handleOpenChat}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={28} color="#9CA3AF" />
                     <Text style={styles.navText}>Messages</Text>
                 </TouchableOpacity>
 
