@@ -243,7 +243,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     justifyContent: 'center',
     alignItems: 'center',
-  },
+  
 });
 
-// Sample Comment 
