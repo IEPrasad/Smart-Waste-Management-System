@@ -29,5 +29,3 @@ export default function CitizenIndex() {
   );
 }
 
-
-// sample comment
