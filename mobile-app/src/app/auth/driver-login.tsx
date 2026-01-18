@@ -81,7 +81,6 @@ export default function DriverLoginScreen() {
             await AsyncStorage.setItem('driver_profile', JSON.stringify(driver));
 
             // 4) Navigate to driver screen
-            // router.replace('/driver') - keep as before (or pass params if you prefer)
             router.replace('/driver' as any);
         } catch (err) {
             console.error('Login exception', err);
@@ -140,7 +139,6 @@ export default function DriverLoginScreen() {
                                 isLoading={loading}
                                 disabled={loading}
                             />
-
                         </View>
                     </View>
 
