@@ -20,30 +20,41 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
-        if (visible && pickup && driverId) {
+        // 🛑 CHANGE: Use 'any' or 'number' to avoid the TS2322 error
+        let pollInterval: any;
+
+        if (visible && pickup?.id && driverId) {
             checkExpiry();
-            fetchMessages();
+            fetchMessages(true);
             markAsRead();
 
-            // SUBSCRIPTION: Listen for NEW messages in real-time
             const channel = supabase
                 .channel(`chat:${pickup.id}`)
                 .on(
                     'postgres_changes',
                     { event: 'INSERT', schema: 'public', table: 'messages', filter: `pickup_id=eq.${pickup.id}` },
                     (payload) => {
-                        // Append new message to list
-                        setMessages((prev) => [payload.new, ...prev]);
-                        markAsRead(); // Mark new incoming message as read immediately if chat is open
+                        setMessages((currentMessages) => {
+                            const exists = currentMessages.find(m => m.id === payload.new.id);
+                            return exists ? currentMessages : [payload.new, ...currentMessages];
+                        });
+                        markAsRead();
                     }
                 )
                 .subscribe();
 
+            // ✅ FIX: Using window.setInterval ensures it treats the ID as a number
+            pollInterval = setInterval(() => {
+                fetchMessages(false);
+                markAsRead();
+            }, 5000);
+
             return () => {
                 supabase.removeChannel(channel);
+                if (pollInterval) clearInterval(pollInterval);
             };
         }
-    }, [visible, pickup]);
+    }, [visible, pickup?.id]);
 
     // 1. Check if chat should be locked (60 min rule)
     const checkExpiry = () => {
@@ -62,26 +73,30 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
         }
     };
 
-    // 2. Load initial history
-    const fetchMessages = async () => {
-        setLoading(true);
+    // 2. Fetch Messages (with optional loading state)
+    const fetchMessages = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
+
         const { data, error } = await supabase
             .from('messages')
             .select('*')
             .eq('pickup_id', pickup.id)
-            .order('created_at', { ascending: false }); // Newest at bottom for chat feel? No, FlatList inverted is better.
+            .order('created_at', { ascending: false });
 
-        if (data) setMessages(data);
+        if (data) {
+            setMessages(data);
+        }
         setLoading(false);
     };
 
     // 3. Mark messages as read
     const markAsRead = async () => {
+        if (!driverId || !pickup?.id) return;
         await supabase
             .from('messages')
             .update({ is_read: true })
             .eq('pickup_id', pickup.id)
-            .eq('receiver_id', driverId) // Only mark messages sent TO me
+            .eq('receiver_id', driverId)
             .eq('is_read', false);
     };
 
@@ -90,14 +105,12 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
         if (!text.trim() || !driverId) return;
 
         const msgText = text.trim();
-        setText(''); // Clear input immediately for speed
-
-        // Optimistic UI update (optional, but real-time usually handles it fast enough)
+        setText('');
 
         const { error } = await supabase.from('messages').insert({
             pickup_id: pickup.id,
             sender_id: driverId,
-            receiver_id: pickup.citizen_id, // Ensure your pickup object has citizen_id!
+            receiver_id: pickup.citizen_id,
             text: msgText,
             is_read: false
         });
@@ -105,6 +118,9 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
         if (error) {
             alert("Failed to send");
             console.error(error);
+        } else {
+            // Immediately refresh local state after sending for better feel
+            fetchMessages(false);
         }
     };
 
@@ -160,7 +176,7 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
                             data={messages}
                             renderItem={renderMessage}
                             keyExtractor={item => item.id}
-                            inverted // This makes the list stick to the bottom like WhatsApp
+                            inverted
                             contentContainerStyle={styles.chatList}
                             ListEmptyComponent={
                                 <Text style={styles.emptyText}>No messages yet. Start the conversation!</Text>
@@ -198,8 +214,7 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#EFE7DE' }, // WhatsApp-ish beige background
-
+    container: { flex: 1, backgroundColor: '#EFE7DE' },
     header: {
         flexDirection: 'row', alignItems: 'center', padding: 15,
         backgroundColor: '#fff', elevation: 4, borderBottomWidth: 1, borderBottomColor: '#ddd', paddingTop: 20
@@ -210,28 +225,20 @@ const styles = StyleSheet.create({
     headerSub: { fontSize: 12, color: '#666' },
     expiredBadge: { backgroundColor: '#FFEBEE', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
     expiredText: { color: '#D32F2F', fontSize: 10, fontWeight: 'bold' },
-
     chatList: { padding: 15 },
-    emptyText: { textAlign: 'center', color: '#999', marginTop: 20, transform: [{ scaleY: -1 }] }, // Flip text back because list is inverted
-
-    // Message Bubbles
+    emptyText: { textAlign: 'center', color: '#999', marginTop: 20, transform: [{ scaleY: -1 }] },
     msgRow: { marginBottom: 10, flexDirection: 'row' },
     msgRowMe: { justifyContent: 'flex-end' },
     msgRowThem: { justifyContent: 'flex-start' },
-
     bubble: { maxWidth: '80%', padding: 10, borderRadius: 10, elevation: 1 },
-    bubbleMe: { backgroundColor: '#DCF8C6', borderTopRightRadius: 0 }, // WhatsApp Green
+    bubbleMe: { backgroundColor: '#DCF8C6', borderTopRightRadius: 0 },
     bubbleThem: { backgroundColor: '#FFFFFF', borderTopLeftRadius: 0 },
-
     msgText: { fontSize: 16 },
     textMe: { color: '#000' },
     textThem: { color: '#000' },
-
     msgTime: { fontSize: 10, alignSelf: 'flex-end', marginTop: 4 },
     timeMe: { color: '#555' },
     timeThem: { color: '#999' },
-
-    // Input Bar
     inputBar: {
         flexDirection: 'row', alignItems: 'center', padding: 10,
         backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#ddd'
