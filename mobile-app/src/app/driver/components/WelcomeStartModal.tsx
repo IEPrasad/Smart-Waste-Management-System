@@ -29,7 +29,7 @@ export default function WelcomeStartModal({
     return (
         <View style={styles.modalOverlay}>
         <View style={styles.welcomeCard}>
-        <Text style={styles.welcomeText}>Good morning, {driverName || 'Driver'}</Text>
+        <Text style={styles.welcomeText}>Welcome Back, {driverName || 'Driver'}</Text>
 
     <Text style={styles.sunIcon}>{showSun ? '☀️' : '☁️'}</Text>
 
