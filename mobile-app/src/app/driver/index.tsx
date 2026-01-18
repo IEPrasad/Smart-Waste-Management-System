@@ -18,6 +18,8 @@ import DriverHistoryModal from './components/DriverHistoryModal'; // <<< IMPORT 
 import DriverMessagesModal from './components/DriverMessagesModal'; // List
 import DriverChatModal from './components/DriverChatModal';         // Chat Window
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const { width, height } = Dimensions.get('window');
 // ⚠️ Ensure "Directions API" is enabled in Google Cloud Console
 const GOOGLE_API_KEY = "AIzaSyAWAwQ3RBtI20uUUGyLwedbqihPvpol3pw";
@@ -82,7 +84,7 @@ export default function DriverHomeScreen() {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setDriverId(user.id);
-                const { data: driver } = await supabase.from('drivers').select('full_name').eq('id', user.id).single();
+                const { data: driver } = await supabase.from('driver').select('full_name').eq('id', user.id).single();
                 if (driver) setDriverName(driver.full_name);
             }
 
@@ -135,15 +137,21 @@ export default function DriverHomeScreen() {
 
                     // DB Sync (Every 5s)
                     const now = Date.now();
-                    if (user && hasStarted && (now - lastDbUpdate.current > 5000)) {
+                    if (driverId && hasStarted && (now - lastDbUpdate.current > 5000)) {
                         lastDbUpdate.current = now;
-                        await supabase.from('driver_live_location').upsert({
-                            driver_id: user.id,
+
+                        const { error } = await supabase.from('driver_live_location').upsert({
+                            driver_id: driverId,
                             lat: latitude,
                             lng: longitude,
-                            is_online: true,
                             updated_at: new Date()
                         }, { onConflict: 'driver_id' });
+
+                        if (error) {
+                            console.error("📍 Sync Error:", error.message);
+                        } else {
+                            console.log("📍 Location synced to DB");
+                        }
                     }
                 }
             );
@@ -192,7 +200,7 @@ export default function DriverHomeScreen() {
             Alert.alert("Waiting for GPS", "Please wait a moment.");
             return;
         }
-        await supabase.from('drivers').update({ is_online: true }).eq('id', driverId);
+        await supabase.from('driver').update({ is_online: true }).eq('id', driverId);
 
         if (pickups.length > 0) {
             const nearest = findNearestPickup(currentLocation.latitude, currentLocation.longitude, pickups);
@@ -221,8 +229,6 @@ export default function DriverHomeScreen() {
         await supabase.from('pickups').update({
             status: 'completed',
             completed_at: new Date(),
-            compost_weight: compostWt,
-            recycling_weight: recycleWt
         }).eq('id', selectedPickup.id);
 
         setPopupVisible(false);
@@ -298,13 +304,34 @@ export default function DriverHomeScreen() {
     };
 
     // Logout
+    // Inside index.tsx
+
+
     const handleLogout = async () => {
-        if (driverId) {
-            await supabase.from('drivers').update({ is_online: false }).eq('id', driverId);
+        try {
+            // 1. Set status to offline in DB
+            if (driverId) {
+                await supabase.from('driver').update({ is_online: false }).eq('id', driverId);
+            }
+
+            // 2. Sign out of Supabase
+            const { error } = await supabase.auth.signOut();
+
+            if (error) throw error;
+
+            // 3. Clear local storage/cache (Very important to remove driver details)
+            await AsyncStorage.clear();
+
+            // 4. Close the modal
+            setProfileVisible(false);
+
+            // 5. Navigate back to login page
+            // If you are using expo-router, use replace so they can't go "back" to the home screen
+            router.replace('/auth/driver-login');
+
+        } catch (err) {
+            Alert.alert("Logout Error", "Please try again.");
         }
-        await supabase.auth.signOut();
-        setProfileVisible(false);
-        Alert.alert("Logged Out", "You have been logged out successfully.");
     };
 
     // <<< HANDLER FOR HISTORY BUTTON >>>
