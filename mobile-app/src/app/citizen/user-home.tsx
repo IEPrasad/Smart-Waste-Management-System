@@ -313,4 +313,9 @@ const styles = StyleSheet.create({
     navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
     navText: { fontSize: 11, color: '#9CA3AF', marginTop: 4, fontWeight: '500' },
     navTextActive: { color: '#10B981', fontWeight: '600' },
+<<<<<<< HEAD
 });
+=======
+});
+
+>>>>>>> 532c968b990d91d7ed557fffc0670f56961203bc

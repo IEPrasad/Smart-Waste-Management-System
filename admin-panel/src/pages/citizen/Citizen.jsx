@@ -1,18 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import './Citizen.css';
-import StatsCard from '../../components/Citizen/StatsCard';
-import CitizenTable from '../../components/Citizen/CitizenTable';
-import { getCitizenCounts, getCitizensByStatus } from '../../services/citizenService';
+import StatsCard from '../../components/Citizen/StatsCard/StatsCard';
+import CitizenTable from '../../components/Citizen/CitizenTable/CitizenTable';
+import { getCitizenCounts, getCitizensByStatus, getAllCitizens } from '../../services/citizenService';
 
-// Icons
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+// Material UI Icons
+import GroupIcon from '@mui/icons-material/Group';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import CancelIcon from '@mui/icons-material/Cancel';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 
+/**
+ * Citizen Management Page
+ * Displays stat cards for different citizen statuses and a filterable table
+ */
 const Citizen = () => {
-    const [counts, setCounts] = useState({ approved: 0, pending: 0, rejected: 0 });
-    const [selectedStatus, setSelectedStatus] = useState('approved');
+    // State for counts
+    const [counts, setCounts] = useState({
+        total: 0,
+        pending: 0,
+        rejected: 0,
+        suspended: 0
+    });
+
+    // State for selected status filter
+    const [selectedStatus, setSelectedStatus] = useState('total');
+
+    // State for citizens data
     const [citizens, setCitizens] = useState([]);
+
+    // Loading state
     const [isLoading, setIsLoading] = useState(true);
 
     // Fetch counts on mount
@@ -28,67 +45,94 @@ const Citizen = () => {
     useEffect(() => {
         const fetchCitizens = async () => {
             setIsLoading(true);
-            const { data } = await getCitizensByStatus(selectedStatus);
-            setCitizens(data || []);
+
+            let result;
+            if (selectedStatus === 'total') {
+                // For "Total Citizens", fetch all approved citizens
+                result = await getAllCitizens();
+            } else {
+                // For other statuses, use the status filter
+                result = await getCitizensByStatus(selectedStatus);
+            }
+
+            setCitizens(result.data || []);
             setIsLoading(false);
         };
         fetchCitizens();
     }, [selectedStatus]);
 
+    // Handle card click to change filter
     const handleCardClick = (status) => {
         setSelectedStatus(status);
     };
 
-    const getStatusLabel = () => {
+    // Handle view citizen action
+    const handleViewCitizen = (citizen) => {
+        // TODO: Open citizen details modal or navigate to details page
+        console.log('View citizen:', citizen);
+    };
+
+    // Get table title based on selected status
+    const getTableTitle = () => {
         switch (selectedStatus) {
-            case 'approved': return 'approved';
-            case 'pending': return 'pending';
-            case 'rejected': return 'rejected';
-            default: return '';
+            case 'total':
+                return 'Total Citizens';
+            case 'pending':
+                return 'Pending Requests';
+            case 'rejected':
+                return 'Rejected Requests';
+            case 'suspended':
+                return 'Suspended Citizens';
+            default:
+                return 'Citizens';
         }
     };
 
     return (
-        <div className="citizen-container">
-            {/* Stats Cards */}
-            <div className="citizen-stats">
+        <div className="citizen-page">
+            {/* Stats Cards Section */}
+            <div className="citizen-page__stats">
                 <StatsCard
-                    title="Active Citizens"
-                    count={counts.approved}
-                    icon={<CheckCircleOutlineIcon />}
-                    variant="approved"
-                    isActive={selectedStatus === 'approved'}
-                    onClick={() => handleCardClick('approved')}
+                    title="Total Citizens"
+                    count={counts.total}
+                    icon={<GroupIcon />}
+                    variant="total"
+                    isActive={selectedStatus === 'total'}
+                    onClick={() => handleCardClick('total')}
                 />
                 <StatsCard
-                    title="New Requests"
+                    title="Pending Requests"
                     count={counts.pending}
-                    icon={<PendingActionsIcon />}
+                    icon={<EditNoteIcon />}
                     variant="pending"
                     isActive={selectedStatus === 'pending'}
                     onClick={() => handleCardClick('pending')}
                 />
                 <StatsCard
-                    title="Rejected Users"
+                    title="Rejected Requests"
                     count={counts.rejected}
-                    icon={<CancelOutlinedIcon />}
+                    icon={<CancelIcon />}
                     variant="rejected"
                     isActive={selectedStatus === 'rejected'}
                     onClick={() => handleCardClick('rejected')}
                 />
+                <StatsCard
+                    title="Suspended Citizen"
+                    count={counts.suspended}
+                    icon={<PersonOffIcon />}
+                    variant="suspended"
+                    isActive={selectedStatus === 'suspended'}
+                    onClick={() => handleCardClick('suspended')}
+                />
             </div>
 
-            {/* Citizens Table */}
-            <div className="citizen-table-section">
-                <h2 className="citizen-table-title">
-                    {selectedStatus === 'approved' && 'Active Citizens'}
-                    {selectedStatus === 'pending' && 'Pending Requests'}
-                    {selectedStatus === 'rejected' && 'Rejected Users'}
-                </h2>
+            {/* Table Section */}
+            <div className="citizen-page__table">
                 <CitizenTable
                     citizens={citizens}
                     isLoading={isLoading}
-                    statusLabel={getStatusLabel()}
+                    tableTitle={getTableTitle()}
+                    onViewCitizen={handleViewCitizen}
                 />
             </div>
         </div>
