@@ -35,23 +35,44 @@ export default function EditProfileModal({ visible, onClose, currentEmail, curre
         }
 
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("User not found");
 
-        const { error } = await supabase
-            .from('driver')
-            .update({
-                email: email.trim(),
-                mobile_number: phone.trim()
-            })
-            .eq('id', user?.id);
+            // 1. UPDATE SUPABASE AUTH (This handles the login email)
+            if (email.trim() !== currentEmail) {
+                const { error: authError } = await supabase.auth.updateUser({
+                    email: email.trim(),
+                });
 
-        if (error) {
-            Alert.alert("Update Failed", error.message);
-        } else {
+                if (authError) throw authError;
+
+                // Inform the user about the confirmation email
+                Alert.alert(
+                    "Verify Email",
+                    "A confirmation link has been sent to your new email. Please verify it to update your login credentials."
+                );
+            }
+
+            // 2. UPDATE DRIVER TABLE (This handles your profile data)
+            const { error: dbError } = await supabase
+                .from('driver')
+                .update({
+                    email: email.trim(),
+                    mobile_number: phone.trim()
+                })
+                .eq('id', user.id);
+
+            if (dbError) throw dbError;
+
             Alert.alert("Success", "Profile details updated.");
             onClose();
+
+        } catch (error: any) {
+            Alert.alert("Update Failed", error.message);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     // Helper to ensure only numbers are typed in the phone field

@@ -215,5 +215,3 @@ const styles = StyleSheet.create({
 });
 
 //sample comment
-
-
