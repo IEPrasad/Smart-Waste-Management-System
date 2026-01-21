@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#333',
     },
-<<<<<<< HEAD
+
     modalItemTextSelected: {
         color: '#00E5CC',
         fontWeight: '600',
@@ -584,6 +584,5 @@ const styles = StyleSheet.create({
     },
 });
 
-=======
-});
->>>>>>> b3ef6c66e07c00b70e7648e8b38617990d9b9bd4
+
+
