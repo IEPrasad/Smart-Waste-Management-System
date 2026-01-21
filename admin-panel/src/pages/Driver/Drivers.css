@@ -1,6 +1,37 @@
 .drivers-container {
     padding: 15px;
     width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.drivers-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* Page Header Section */
+.drivers-page-header {
+    margin-bottom: 32px;
+}
+
+.drivers-main-heading {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.5px;
+}
+
+.drivers-subtext {
+    font-size: 15px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.5;
 }
 
 .drivers-header {
@@ -15,4 +46,186 @@
     font-weight: bold;
     color: #000;
     margin: 0;
+}
+
+/* Drivers Grid - keeping for fallback */
+.drivers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Drivers Carousel */
+.drivers-carousel-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.drivers-carousel {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 10px 5px;
+    flex: 1;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.drivers-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.drivers-carousel .driver-card {
+    flex: 0 0 300px;
+    min-width: 300px;
+}
+
+/* Carousel Arrow Buttons */
+.carousel-arrow {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.carousel-arrow:hover {
+    background: linear-gradient(135deg, #00d2a0 0%, #00b88d 100%);
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(0, 210, 160, 0.3);
+}
+
+.carousel-arrow:hover svg {
+    color: white;
+}
+
+.carousel-arrow svg {
+    font-size: 24px;
+    color: #6b7280;
+    transition: color 0.2s ease;
+}
+
+.carousel-arrow:active {
+    transform: scale(0.95);
+}
+
+/* Loading State */
+.drivers-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 16px;
+}
+
+.drivers-loading p {
+    color: #6b7280;
+    font-size: 15px;
+    margin: 0;
+}
+
+/* Error State */
+.drivers-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    background: #fef2f2;
+    border-radius: 16px;
+    border: 1px solid #fecaca;
+    gap: 16px;
+}
+
+.drivers-error p {
+    color: #dc2626;
+    font-size: 15px;
+    margin: 0;
+    font-weight: 500;
+}
+
+.retry-btn {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #00d2a0 0%, #00b88d 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.retry-btn:hover {
+    background: linear-gradient(135deg, #00b88d 0%, #00a07a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 210, 160, 0.3);
+}
+
+/* Empty State */
+.drivers-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 16px;
+    border: 2px dashed #e2e8f0;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.drivers-empty h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 8px 0;
+}
+
+.drivers-empty p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Vehicles Management Section */
+.vehicles-section {
+    margin-top: 30px;
+}
+
+.add-vehicle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #00d2a0;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.add-vehicle-btn:hover {
+    background-color: #00b88d;
 }
