@@ -1,24 +1,31 @@
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 
-import { View, Text, StyleSheet } from 'react-native';
-import React from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+export default function CitizenIndex() {
+  const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
 
-export default function CitizenHomeScreen() {
-    return (
-        <SafeAreaView style={styles.container}>
-            <Text style={styles.text}>Welcome Citizen!</Text>
-        </SafeAreaView>
-    );
+  useEffect(() => {
+    // Wait for root layout to mount
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      // Small delay to ensure navigation is ready
+      const timer = setTimeout(() => {
+        router.replace('/citizen/user-home');
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isMounted]);
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#10B981' }}>
+      <ActivityIndicator size="large" color="#FFFFFF" />
+    </View>
+  );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    text: {
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-});

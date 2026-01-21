@@ -1,5 +1,19 @@
 {
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "This is the core server-side application for the Waste Management System, built using Node.js, Express, and MongoDB. It acts as the \"digital air traffic control tower\" to synchronize residents, drivers, and city officials.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "dependencies": {
-    "supabase": "^2.72.3"
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.0.2"
   }
 }
