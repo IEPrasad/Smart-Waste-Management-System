@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,128 +7,154 @@ import {
   StatusBar,
   ScrollView,
   Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Transaction {
-  id: string;
-  name: string;
-  date: string;
-  time: string;
-  weight: number;
-  rate: number;
-  earnings: number;
-  category: 'recycling' | 'compost';
-  icon: string;
-}
+import {
+  getRewardTransactions,
+  getRewardSummary,
+  getCurrentUserId,
+} from '@/services/rewardCalculationService';
+import type { RewardTransaction, RewardSummary } from '@/services/rewardCalculationService';
 
 export default function RewardHistoryScreen() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<'all' | 'recycling' | 'compost'>('all');
-  const [startDate, setStartDate] = useState('2025-01-01');
-  const [endDate, setEndDate] = useState('2025-01-31');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'compost' | 'recycling'>('all');
+  const [transactions, setTransactions] = useState<RewardTransaction[]>([]);
+  const [rewardSummary, setRewardSummary] = useState<RewardSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Transactions based on sort-trash items
-  const transactions: Transaction[] = [
-    {
-      id: '1',
-      name: 'Plastic Bottle',
-      date: 'Jan 15, 2025',
-      time: '2:30 PM',
-      weight: 0.50,
-      rate: 20.00,
-      earnings: 10.00,
-      category: 'recycling',
-      icon: 'sync',
-    },
-    {
-      id: '2',
-      name: 'Paper',
-      date: 'Jan 14, 2025',
-      time: '4:45 PM',
-      weight: 2.20,
-      rate: 20.00,
-      earnings: 44.00,
-      category: 'recycling',
-      icon: 'sync',
-    },
-    {
-      id: '3',
-      name: 'Apple Core',
-      date: 'Jan 12, 2025',
-      time: '10:15 AM',
-      weight: 10.10,
-      rate: 30.00,
-      earnings: 303.00,
-      category: 'compost',
-      icon: 'leaf',
-    },
-    {
-      id: '4',
-      name: 'Vegetable Scraps',
-      date: 'Jan 10, 2025',
-      time: '3:20 PM',
-      weight: 1.50,
-      rate: 30.00,
-      earnings: 45.00,
-      category: 'compost',
-      icon: 'leaf',
-    },
-    {
-      id: '5',
-      name: 'Coffee Grounds',
-      date: 'Jan 08, 2025',
-      time: '9:00 AM',
-      weight: 3.40,
-      rate: 30.00,
-      earnings: 102.00,
-      category: 'compost',
-      icon: 'leaf',
-    },
-  ];
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  const filteredTransactions = selectedCategory === 'all' 
-    ? transactions 
-    : transactions.filter(t => t.category === selectedCategory);
+  const loadData = async () => {
+    try {
+      setLoading(true);
 
-  const totalEarnings = transactions.reduce((sum, t) => sum + t.earnings, 0);
-  const monthEarnings = filteredTransactions.reduce((sum, t) => sum + t.earnings, 0);
-  const transactionCount = transactions.length;
+      // Get current user ID
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        Alert.alert('Error', 'User not found. Please log in again.');
+        return;
+      }
+
+      // Load reward transactions and summary
+      const [transactionsResponse, summaryResponse] = await Promise.all([
+        getRewardTransactions(userId),
+        getRewardSummary(userId),
+      ]);
+
+      if (transactionsResponse.error) {
+        console.error('Error loading transactions:', transactionsResponse.error);
+      } else if (transactionsResponse.data) {
+        setTransactions(transactionsResponse.data);
+      }
+
+      if (summaryResponse.error) {
+        console.error('Error loading summary:', summaryResponse.error);
+      } else if (summaryResponse.data) {
+        setRewardSummary(summaryResponse.data);
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      Alert.alert('Error', 'Failed to load reward history');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+  };
 
   const handleSendRequest = () => {
-    //router.push('/citizen/wallet');
+    router.push('/citizen/wallet');
   };
 
-  const getCategoryColor = (category: string) => {
-    return '#10B981'; // Green for both
+  // Filter transactions based on selected category
+  const filteredTransactions = transactions.filter((transaction) => {
+    if (selectedCategory === 'all') {
+      return true;
+    } else if (selectedCategory === 'compost') {
+      return transaction.compost_weight > 0;
+    } else {
+      return transaction.recycling_weight > 0;
+    }
+  });
+
+  // Calculate category-specific earnings for header
+  const getCategoryEarnings = (): number => {
+    if (!rewardSummary) return 0;
+
+    if (selectedCategory === 'all') {
+      return rewardSummary.total_earnings;
+    } else if (selectedCategory === 'compost') {
+      return rewardSummary.compost_earnings;
+    } else {
+      return rewardSummary.recycling_earnings;
+    }
   };
 
-  const getCategoryBgColor = (category: string) => {
-    return category === 'recycling' ? '#D1FAE5' : '#D1FAE5'; // Light green for both
+  // Get category label for header
+  const getCategoryLabel = (): string => {
+    if (selectedCategory === 'all') {
+      return 'Total Earnings';
+    } else if (selectedCategory === 'compost') {
+      return 'Compost Earnings';
+    } else {
+      return 'Recycling Earnings';
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#10B981" />
+        <Text style={styles.loadingText}>Loading rewards...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Rewards History</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Earnings Card */}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10B981']} />
+        }
+      >
+        {/* Earnings Card - Dynamic based on category */}
         <View style={styles.earningsCard}>
-          <Text style={styles.earningsLabel}>Total Earnings</Text>
-          <Text style={styles.earningsValue}>Rs. {totalEarnings.toFixed(2)}</Text>
+          <Text style={styles.earningsLabel}>{getCategoryLabel()}</Text>
+          <Text style={styles.earningsValue}>Rs. {getCategoryEarnings().toFixed(2)}</Text>
+          <View style={styles.earningsStats}>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Completed</Text>
+              <Text style={styles.statValue}>{rewardSummary?.completed_count || 0}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Skipped</Text>
+              <Text style={styles.statValue}>{rewardSummary?.skipped_count || 0}</Text>
+            </View>
+          </View>
         </View>
 
         {/* Category Tabs */}
@@ -146,7 +172,14 @@ export default function RewardHistoryScreen() {
             style={[styles.tab, selectedCategory === 'recycling' && styles.tabActive]}
             onPress={() => setSelectedCategory('recycling')}
           >
-            <Text style={[styles.tabText, selectedCategory === 'recycling' && styles.tabTextActive]}>
+            <Ionicons
+              name="sync"
+              size={16}
+              color={selectedCategory === 'recycling' ? '#FFFFFF' : '#6B7280'}
+            />
+            <Text
+              style={[styles.tabText, selectedCategory === 'recycling' && styles.tabTextActive]}
+            >
               Recycling
             </Text>
           </TouchableOpacity>
@@ -155,7 +188,14 @@ export default function RewardHistoryScreen() {
             style={[styles.tab, selectedCategory === 'compost' && styles.tabActive]}
             onPress={() => setSelectedCategory('compost')}
           >
-            <Text style={[styles.tabText, selectedCategory === 'compost' && styles.tabTextActive]}>
+            <Ionicons
+              name="leaf"
+              size={16}
+              color={selectedCategory === 'compost' ? '#FFFFFF' : '#6B7280'}
+            />
+            <Text
+              style={[styles.tabText, selectedCategory === 'compost' && styles.tabTextActive]}
+            >
               Compost
             </Text>
           </TouchableOpacity>
@@ -164,46 +204,101 @@ export default function RewardHistoryScreen() {
         {/* Transactions List */}
         <View style={styles.transactionsSection}>
           <Text style={styles.sectionTitle}>Recent Pickups</Text>
-          
-          {filteredTransactions.map((transaction) => (
-            <View 
-              key={transaction.id} 
-              style={[
-                styles.transactionCard,
-                { borderLeftColor: getCategoryColor(transaction.category) }
-              ]}
-            >
-              <View style={styles.transactionLeft}>
-                <View style={[
-                  styles.transactionIcon,
-                  { backgroundColor: getCategoryBgColor(transaction.category) }
-                ]}>
-                  <Ionicons 
-                    name={transaction.icon as any} 
-                    size={24} 
-                    color={getCategoryColor(transaction.category)} 
-                  />
-                </View>
-                <View style={styles.transactionDetails}>
-                  <Text style={styles.transactionCategory}>
-                    {transaction.category === 'compost' ? 'Compost' : 'Recycling'}
-                  </Text>
-                  <Text style={styles.transactionDateTime}>
-                    {transaction.date} • {transaction.time}
-                  </Text>
-                  <Text style={styles.transactionInfo}>
-                    Weight: {transaction.weight.toFixed(1)} kg • Rate: Rs {transaction.rate.toFixed(2)}/kg
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.transactionRight}>
-                <Text style={styles.transactionEarnings}>+Rs {transaction.earnings.toFixed(2)}</Text>
-                <View style={styles.completedBadge}>
-                  <Text style={styles.completedText}>Completed</Text>
-                </View>
-              </View>
+
+          {filteredTransactions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name={selectedCategory === 'all' ? 'wallet-outline' : selectedCategory === 'compost' ? 'leaf-outline' : 'sync-outline'}
+                size={64}
+                color="#D1D5DB"
+              />
+              <Text style={styles.emptyStateText}>
+                No {selectedCategory === 'all' ? '' : selectedCategory + ' '}rewards yet
+              </Text>
+              <Text style={styles.emptyStateSubtext}>
+                Your reward history will appear here after pickups
+              </Text>
             </View>
-          ))}
+          ) : (
+            filteredTransactions.map((transaction) => {
+              const isCompleted = transaction.status === 'completed';
+              const borderColor = isCompleted ? '#10B981' : '#EF4444';
+              const iconBgColor = isCompleted ? '#D1FAE5' : '#FEE2E2';
+              const iconColor = isCompleted ? '#10B981' : '#EF4444';
+              const earningsColor = isCompleted ? '#10B981' : '#EF4444';
+              const badgeBgColor = isCompleted ? '#D1FAE5' : '#FEE2E2';
+              const badgeTextColor = isCompleted ? '#10B981' : '#EF4444';
+
+              // Determine which category this transaction belongs to
+              const hasCompost = transaction.compost_weight > 0;
+              const hasRecycling = transaction.recycling_weight > 0;
+              const categoryIcon = hasCompost && hasRecycling
+                ? 'layers'
+                : hasCompost
+                  ? 'leaf'
+                  : 'sync';
+              const categoryName = hasCompost && hasRecycling
+                ? 'Mixed'
+                : hasCompost
+                  ? 'Compost'
+                  : 'Recycling';
+
+              // Show weight based on selected category filter
+              const displayWeight =
+                selectedCategory === 'compost'
+                  ? transaction.compost_weight
+                  : selectedCategory === 'recycling'
+                    ? transaction.recycling_weight
+                    : transaction.compost_weight + transaction.recycling_weight;
+
+              // Show earnings based on selected category filter
+              const displayEarnings =
+                selectedCategory === 'compost'
+                  ? transaction.compost_earnings
+                  : selectedCategory === 'recycling'
+                    ? transaction.recycling_earnings
+                    : transaction.total_earnings;
+
+              return (
+                <View
+                  key={transaction.id}
+                  style={[styles.transactionCard, { borderLeftColor: borderColor }]}
+                >
+                  <View style={styles.transactionLeft}>
+                    <View style={[styles.transactionIcon, { backgroundColor: iconBgColor }]}>
+                      <Ionicons name={categoryIcon as any} size={24} color={iconColor} />
+                    </View>
+                    <View style={styles.transactionDetails}>
+                      <Text style={[styles.transactionCategory, { color: iconColor }]}>
+                        {categoryName}
+                      </Text>
+                      <Text style={styles.transactionDateTime}>
+                        {transaction.collected_date} • {transaction.collected_time}
+                      </Text>
+                      <Text style={styles.transactionInfo}>
+                        Weight: {displayWeight.toFixed(0)} g
+                      </Text>
+                      {transaction.driver_name && (
+                        <Text style={styles.transactionDriver}>
+                          Driver: {transaction.driver_name}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.transactionRight}>
+                    <Text style={[styles.transactionEarnings, { color: earningsColor }]}>
+                      {isCompleted ? '+' : ''}Rs {displayEarnings.toFixed(2)}
+                    </Text>
+                    <View style={[styles.statusBadge, { backgroundColor: badgeBgColor }]}>
+                      <Text style={[styles.statusText, { color: badgeTextColor }]}>
+                        {isCompleted ? 'Completed' : 'Skipped'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })
+          )}
         </View>
 
         <View style={{ height: 20 }} />
@@ -227,6 +322,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#6B7280',
   },
   header: {
     flexDirection: 'row',
@@ -279,6 +383,7 @@ const styles = StyleSheet.create({
   earningsStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    marginTop: 20,
   },
   statItem: {
     alignItems: 'center',
@@ -303,10 +408,13 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingVertical: 12,
-    alignItems: 'center',
+    gap: 6,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -322,29 +430,6 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: '#FFFFFF',
   },
-  dateRangeContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 16,
-    gap: 10,
-  },
-  dateBox: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  dateText: {
-    fontSize: 14,
-    color: '#000000',
-    fontWeight: '500',
-  },
   transactionsSection: {
     paddingHorizontal: 16,
     marginTop: 24,
@@ -354,6 +439,23 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
     marginBottom: 16,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 16,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 4,
+    textAlign: 'center',
   },
   transactionCard: {
     backgroundColor: '#FFFFFF',
@@ -387,17 +489,22 @@ const styles = StyleSheet.create({
   transactionCategory: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#10B981',
     marginBottom: 4,
   },
   transactionDateTime: {
     fontSize: 13,
     color: '#6B7280',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   transactionInfo: {
     fontSize: 13,
     color: '#6B7280',
+    marginBottom: 2,
+  },
+  transactionDriver: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
   transactionRight: {
     alignItems: 'flex-end',
@@ -406,18 +513,16 @@ const styles = StyleSheet.create({
   transactionEarnings: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#10B981',
+    marginBottom: 8,
   },
-  completedBadge: {
-    backgroundColor: '#D1FAE5',
+  statusBadge: {
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  completedText: {
+  statusText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#10B981',
   },
   buttonContainer: {
     paddingHorizontal: 16,
