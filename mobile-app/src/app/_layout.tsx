@@ -51,6 +51,7 @@ export default function RootLayout() {
         />
         <Stack.Screen name="citizen/index" options={{ headerShown: false }} />
         <Stack.Screen name="driver" options={{ headerShown: false }} />
+        <Stack.Screen name="auth/account-status" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
@@ -59,7 +60,7 @@ export default function RootLayout() {
       <StatusBar style="auto" />
 
       {showSplash && (
-        <Splash duration={5000} onFinish={() => setShowSplash(false)} />
+        <Splash duration={2500} onFinish={() => setShowSplash(false)} />
       )}
     </ThemeProvider>
   );

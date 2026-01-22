@@ -20,15 +20,18 @@
     background-color: #f0f2f5;
     /* Light gray content section */
     padding: 20px;
-    /* Industry standard: Rounded top-left corner to separate from sidebar/header */
-    /* border-top-left-radius: 30px;
-    border: 2px solid #f0f2f5; */
-    /* "add the boarder in content section for top right" - Interpreting as visual flair */
-    /* If they meant exactly top-right border-radius: */
-    /* border-top-right-radius: 30px; */
+    /* Enable scrolling within content area */
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+    box-sizing: border-box;
+    /* Hide scrollbar */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
 
-    /* Adding a subtle border to define the edge if 'boarder' meant line */
-    /* border: 1px solid #e0e0e0; */
-    /* border-left: none; */
-    /* border-bottom: none; */
+/* Hide scrollbar for Chrome, Safari and Opera */
+.layout-content::-webkit-scrollbar {
+    display: none;
 }

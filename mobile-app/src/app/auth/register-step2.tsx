@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
     Text,
@@ -22,29 +22,27 @@ import ProgressBar from '../../components/ProgressBar';
 import InputField from '../../components/InputField';
 import SelectField from '../../components/SelectField';
 import BackButton from '../../components/BackButton';
+import { supabase } from '../../../lib/supabase';
 
-const LOCATION_DATA: { [key: string]: string[] } = {
-    "Poddala": ["Poddala (117)", "Penideniya (117C)", "Pannamaga (117B)", "Meepawala (117A)", "Opatha (127B)"],
-    "Narawala": ["Narawala (111)", "Mulana East (111F)", "Mulana West (111G)", "Walawatta (111C)", "Addaragoda (111E)", "Magadeniya (111A)", "Panvila (111B)"],
-    "Labudoowa": ["Baswatta (111D)", "Labudoowa (114)", "Thotagoda (114A)", "Kurunda (114C)", "Kurunda Kanda (114B)"],
-    "Uluvitike": ["Uluvitike (127)", "Holuwagoda (126C)", "Bokaramullagoda (127C)", "Bangalawatta (127D)", "Nawinna (127E)"],
-    "Wakwella": ["Wakwella (121)", "Ukwatta East (108)", "Ukwatta West (108B)"],
-    "Hapugala": ["Hapugala (123)", "Niladeniya (123A)", "Beraliyadola (123D)", "Silwagewatta (124B)"],
-    "Kurunduwatta": ["Kurunduwatta (106)", "Maha Hapugala (108A)"],
-    "Welipitimodara": ["Welipitimodara (105)", "Piyadigama (107)", "Bope North (107A)"],
-    "Kalegana": ["Kalegana North (125A)", "Wataraka East (120)", "Mampitiya (120A)", "Kalegana South (125)"],
-    "Kithulampitiya": ["Kithulampitiya (124)", "Thunhiripana (124A)", "Pelawatta (123B)", "Abeysundarawatta (123C)", "Kahadoowawatta (124C)"],
-    "Karapitiya": ["Karapitiya (126A)", "Godakanda (126)", "Galketiya (126B)", "Hirimburagama (127A)"],
-    "Kapuhempala": ["Ambagahawatta (114D)", "Kapuhempala (115)", "Keranvila (115A)", "Paliwathugoda (115B)", "Thotagoda (114A)"]
-};
+// Types for Supabase tables
+interface Division {
+    id: number;
+    name: string;
+}
+
+interface GnDivision {
+    id: string;
+    name: string;
+    division_id: number;
+}
 
 export default function RegisterStep2() {
     const router = useRouter();
     const params = useLocalSearchParams();
 
     const [assessmentNumber, setAssessmentNumber] = useState('');
-    const [division, setDivision] = useState('');
-    const [gnDivision, setGnDivision] = useState('');
+    const [division, setDivision] = useState<Division | null>(null);
+    const [gnDivision, setGnDivision] = useState<GnDivision | null>(null);
     const [homeLocation, setHomeLocation] = useState('');
     const [latitude, setLatitude] = useState<number | null>(null);
     const [longitude, setLongitude] = useState<number | null>(null);
@@ -53,6 +51,74 @@ export default function RegisterStep2() {
     const [showDivisionPicker, setShowDivisionPicker] = useState(false);
     const [showGnDivisionPicker, setShowGnDivisionPicker] = useState(false);
 
+    // Data from Supabase
+    const [divisions, setDivisions] = useState<Division[]>([]);
+    const [gnDivisions, setGnDivisions] = useState<GnDivision[]>([]);
+    const [isLoadingDivisions, setIsLoadingDivisions] = useState(true);
+    const [isLoadingGnDivisions, setIsLoadingGnDivisions] = useState(false);
+
+    // Fetch divisions on component mount
+    useEffect(() => {
+        const fetchDivisions = async () => {
+            try {
+                setIsLoadingDivisions(true);
+                const { data, error } = await supabase
+                    .from('divisions')
+                    .select('id, name')
+                    .order('name');
+
+                if (error) {
+                    console.error('Error fetching divisions:', error);
+                    Alert.alert('Error', 'Failed to load divisions. Please try again.');
+                    return;
+                }
+
+                setDivisions(data || []);
+            } catch (error) {
+                console.error('Error fetching divisions:', error);
+                Alert.alert('Error', 'Failed to load divisions. Please try again.');
+            } finally {
+                setIsLoadingDivisions(false);
+            }
+        };
+
+        fetchDivisions();
+    }, []);
+
+    // Fetch GN divisions when division changes
+    useEffect(() => {
+        const fetchGnDivisions = async () => {
+            if (!division) {
+                setGnDivisions([]);
+                return;
+            }
+
+            try {
+                setIsLoadingGnDivisions(true);
+                const { data, error } = await supabase
+                    .from('gn_divisions')
+                    .select('id, name, division_id')
+                    .eq('division_id', division.id)
+                    .order('name');
+
+                if (error) {
+                    console.error('Error fetching GN divisions:', error);
+                    Alert.alert('Error', 'Failed to load GN divisions. Please try again.');
+                    return;
+                }
+
+                setGnDivisions(data || []);
+            } catch (error) {
+                console.error('Error fetching GN divisions:', error);
+                Alert.alert('Error', 'Failed to load GN divisions. Please try again.');
+            } finally {
+                setIsLoadingGnDivisions(false);
+            }
+        };
+
+        fetchGnDivisions();
+    }, [division]);
+
     const [errors, setErrors] = useState<{
         assessmentNumber?: string;
         division?: string;
@@ -60,16 +126,16 @@ export default function RegisterStep2() {
         homeLocation?: string;
     }>({});
 
-    const handleDivisionSelect = (item: string) => {
+    const handleDivisionSelect = (item: Division) => {
         setDivision(item);
-        setGnDivision(''); // Reset GN Division when division changes
+        setGnDivision(null); // Reset GN Division when division changes
         setShowDivisionPicker(false);
         if (errors.division) {
             setErrors({ ...errors, division: undefined });
         }
     };
 
-    const handleGnDivisionSelect = (item: string) => {
+    const handleGnDivisionSelect = (item: GnDivision) => {
         setGnDivision(item);
         setShowGnDivisionPicker(false);
         if (errors.gnDivision) {
@@ -117,11 +183,11 @@ export default function RegisterStep2() {
             newErrors.assessmentNumber = 'Assessment Number is required';
         }
 
-        if (!division.trim()) {
+        if (!division) {
             newErrors.division = 'Division is required';
         }
 
-        if (!gnDivision.trim()) {
+        if (!gnDivision) {
             newErrors.gnDivision = 'Grama Niladhari Division is required';
         }
 
@@ -140,8 +206,9 @@ export default function RegisterStep2() {
                 params: {
                     ...params,
                     assessmentNumber: assessmentNumber.trim(),
-                    division,
-                    gnDivision,
+                    division: division?.name || '',
+                    gnDivision: gnDivision?.name || '',
+                    gnDivisionId: gnDivision?.id || '',
                     homeLocation,
                     latitude: latitude?.toString(),
                     longitude: longitude?.toString(),
@@ -150,36 +217,46 @@ export default function RegisterStep2() {
         }
     };
 
-    const renderSelectionModal = (
-        visible: boolean,
-        onClose: () => void,
-        data: string[],
-        onSelect: (item: string) => void,
-        title: string
-    ) => (
-        <Modal visible={visible} transparent animationType="slide">
-            <TouchableWithoutFeedback onPress={onClose}>
+    const renderDivisionModal = () => (
+        <Modal visible={showDivisionPicker} transparent animationType="slide">
+            <TouchableWithoutFeedback onPress={() => setShowDivisionPicker(false)}>
                 <View style={styles.modalOverlay}>
                     <TouchableWithoutFeedback>
                         <View style={styles.modalContent}>
                             <View style={styles.modalHeader}>
-                                <Text style={styles.modalTitle}>{title}</Text>
-                                <TouchableOpacity onPress={onClose}>
+                                <Text style={styles.modalTitle}>Select Division</Text>
+                                <TouchableOpacity onPress={() => setShowDivisionPicker(false)}>
                                     <Ionicons name="close" size={24} color="#000" />
                                 </TouchableOpacity>
                             </View>
-                            <FlatList
-                                data={data}
-                                keyExtractor={(item) => item}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.modalItem}
-                                        onPress={() => onSelect(item)}
-                                    >
-                                        <Text style={styles.modalItemText}>{item}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            />
+                            {isLoadingDivisions ? (
+                                <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="large" color="#00E5CC" />
+                                    <Text style={styles.loadingText}>Loading divisions...</Text>
+                                </View>
+                            ) : (
+                                <FlatList
+                                    data={divisions}
+                                    keyExtractor={(item) => item.id.toString()}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.modalItem,
+                                                division?.id === item.id && styles.modalItemSelected
+                                            ]}
+                                            onPress={() => handleDivisionSelect(item)}
+                                        >
+                                            <Text style={[
+                                                styles.modalItemText,
+                                                division?.id === item.id && styles.modalItemTextSelected
+                                            ]}>{item.name}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    ListEmptyComponent={
+                                        <Text style={styles.emptyText}>No divisions available</Text>
+                                    }
+                                />
+                            )}
                         </View>
                     </TouchableWithoutFeedback>
                 </View>
@@ -187,8 +264,52 @@ export default function RegisterStep2() {
         </Modal>
     );
 
-    const divisions = Object.keys(LOCATION_DATA).sort();
-    const gnDivisions = division ? [...LOCATION_DATA[division]].sort() : [];
+    const renderGnDivisionModal = () => (
+        <Modal visible={showGnDivisionPicker} transparent animationType="slide">
+            <TouchableWithoutFeedback onPress={() => setShowGnDivisionPicker(false)}>
+                <View style={styles.modalOverlay}>
+                    <TouchableWithoutFeedback>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Select GN Division</Text>
+                                <TouchableOpacity onPress={() => setShowGnDivisionPicker(false)}>
+                                    <Ionicons name="close" size={24} color="#000" />
+                                </TouchableOpacity>
+                            </View>
+                            {isLoadingGnDivisions ? (
+                                <View style={styles.loadingContainer}>
+                                    <ActivityIndicator size="large" color="#00E5CC" />
+                                    <Text style={styles.loadingText}>Loading GN divisions...</Text>
+                                </View>
+                            ) : (
+                                <FlatList
+                                    data={gnDivisions}
+                                    keyExtractor={(item) => item.id}
+                                    renderItem={({ item }) => (
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.modalItem,
+                                                gnDivision?.id === item.id && styles.modalItemSelected
+                                            ]}
+                                            onPress={() => handleGnDivisionSelect(item)}
+                                        >
+                                            <Text style={[
+                                                styles.modalItemText,
+                                                gnDivision?.id === item.id && styles.modalItemTextSelected
+                                            ]}>{item.name}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    ListEmptyComponent={
+                                        <Text style={styles.emptyText}>No GN divisions available</Text>
+                                    }
+                                />
+                            )}
+                        </View>
+                    </TouchableWithoutFeedback>
+                </View>
+            </TouchableWithoutFeedback>
+        </Modal>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -241,23 +362,30 @@ export default function RegisterStep2() {
                         <SelectField
                             label="Division"
                             icon="location-outline"
-                            placeholder="Select Division"
-                            value={division}
-                            onPress={() => setShowDivisionPicker(true)}
+                            placeholder={isLoadingDivisions ? "Loading..." : "Select Division"}
+                            value={division?.name || ''}
+                            onPress={() => !isLoadingDivisions && setShowDivisionPicker(true)}
                             error={errors.division}
                             required
+                            disabled={isLoadingDivisions}
                         />
 
                         {/* Grama Niladhari Division */}
                         <SelectField
                             label="Grama Niladhari Division"
                             icon="business-outline"
-                            placeholder={division ? "Select GN Division" : "Select Division First"}
-                            value={gnDivision}
-                            onPress={() => division && setShowGnDivisionPicker(true)}
+                            placeholder={
+                                !division
+                                    ? "Select Division First"
+                                    : isLoadingGnDivisions
+                                        ? "Loading..."
+                                        : "Select GN Division"
+                            }
+                            value={gnDivision?.name || ''}
+                            onPress={() => division && !isLoadingGnDivisions && setShowGnDivisionPicker(true)}
                             error={errors.gnDivision}
                             required
-                            disabled={!division}
+                            disabled={!division || isLoadingGnDivisions}
                         />
 
                         {/* Home Location */}
@@ -305,20 +433,8 @@ export default function RegisterStep2() {
             </View>
 
             {/* Modals */}
-            {renderSelectionModal(
-                showDivisionPicker,
-                () => setShowDivisionPicker(false),
-                divisions,
-                handleDivisionSelect,
-                'Select Division'
-            )}
-            {renderSelectionModal(
-                showGnDivisionPicker,
-                () => setShowGnDivisionPicker(false),
-                gnDivisions,
-                handleGnDivisionSelect,
-                'Select GN Division'
-            )}
+            {renderDivisionModal()}
+            {renderGnDivisionModal()}
         </SafeAreaView>
     );
 }
@@ -438,8 +554,35 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#f0f0f0',
     },
+    modalItemSelected: {
+        backgroundColor: '#E6FBF8',
+    },
     modalItemText: {
         fontSize: 16,
         color: '#333',
     },
+
+    modalItemTextSelected: {
+        color: '#00E5CC',
+        fontWeight: '600',
+    },
+    loadingContainer: {
+        padding: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: '#666',
+    },
+    emptyText: {
+        padding: 20,
+        textAlign: 'center',
+        fontSize: 14,
+        color: '#999',
+    },
 });
+
+
+
