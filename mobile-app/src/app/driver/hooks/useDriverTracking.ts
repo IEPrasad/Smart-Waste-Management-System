@@ -10,6 +10,10 @@ export function useDriverTracking(driverId: string | null, hasStarted: boolean) 
         let subscription: Location.LocationSubscription | null = null;
 
         const startTracking = async () => {
+            // Check permissions first
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') return;
+
             subscription = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.BestForNavigation,
@@ -19,9 +23,10 @@ export function useDriverTracking(driverId: string | null, hasStarted: boolean) 
                 async (loc) => {
                     const { latitude, longitude, heading } = loc.coords;
                     const coords = { latitude, longitude, heading: heading || 0, latitudeDelta: 0.005, longitudeDelta: 0.005 };
+
                     setCurrentLocation(coords);
 
-                    // DB Sync
+                    // Only sync to DB if the driver has officially "Started" the route
                     const now = Date.now();
                     if (driverId && hasStarted && (now - lastDbUpdate.current > 5000)) {
                         lastDbUpdate.current = now;
@@ -36,9 +41,11 @@ export function useDriverTracking(driverId: string | null, hasStarted: boolean) 
             );
         };
 
-        if (hasStarted) startTracking();
+        // ✅ CHANGE: Always start tracking immediately so handleStartRoute has a location
+        startTracking();
+
         return () => subscription?.remove();
-    }, [driverId, hasStarted]);
+    }, [driverId, hasStarted]); // Keep hasStarted here so the listener knows when to start DB syncing
 
     return currentLocation;
 }

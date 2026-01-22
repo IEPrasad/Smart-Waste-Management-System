@@ -6,6 +6,8 @@ import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-ico
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../../lib/supabase';
 
+
+
 // --- Services & Hooks ---
 import { fetchTodayPickups, getDistance } from '@/services/driverService';
 import { useDriverTracking } from './hooks/useDriverTracking';
@@ -64,6 +66,11 @@ export default function DriverHomeScreen() {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        console.log('DEBUG → driverId:', driverId);
+        console.log('DEBUG → currentLocation:', currentLocation);
+    }, [driverId, currentLocation]);
 
     // 3. Camera Follow Logic (Moved from the old watchPosition callback)
     useEffect(() => {
