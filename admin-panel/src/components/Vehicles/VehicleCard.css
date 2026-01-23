@@ -1,0 +1,146 @@
+.vehicle-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    transition: all 0.2s ease;
+    min-width: 320px;
+}
+
+.vehicle-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Eye Icon Button */
+.vehicle-view-icon {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.vehicle-view-icon:hover {
+    background: linear-gradient(135deg, #00d2a0 0%, #00b88d 100%);
+}
+
+.vehicle-view-icon:hover svg {
+    color: white;
+}
+
+.vehicle-view-icon svg {
+    font-size: 18px;
+    color: #6b7280;
+    transition: color 0.2s ease;
+}
+
+/* Truck Icon Section */
+.vehicle-card-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e8f5f1 0%, #d1f2e8 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.truck-icon {
+    font-size: 32px !important;
+    color: #1a1a2e;
+}
+
+/* Content Section */
+.vehicle-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+}
+
+/* Header Row */
+.vehicle-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.vehicle-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 4px 0;
+}
+
+/* Status Badge */
+.vehicle-condition-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: fit-content;
+    margin-bottom: 6px;
+}
+
+.vehicle-condition-badge.good {
+    background: rgba(0, 210, 106, 0.15);
+    color: #00a854;
+}
+
+.vehicle-condition-badge.fair {
+    background: rgba(245, 158, 11, 0.15);
+    color: #d97706;
+}
+
+.vehicle-condition-badge.poor {
+    background: rgba(239, 68, 68, 0.15);
+    color: #dc2626;
+}
+
+/* Type & Model */
+.vehicle-type-model {
+    font-size: 13px;
+    color: #4b5563;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Capacity Row */
+.vehicle-capacity-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.capacity-label {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.capacity-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1a1a2e;
+}

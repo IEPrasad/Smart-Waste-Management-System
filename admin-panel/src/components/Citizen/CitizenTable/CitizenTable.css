@@ -51,15 +51,9 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
 }
 
 .citizen-table__scroll {
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: calc(100vh - 400px);
     border-radius: 12px;
     border: 1px solid #e2e8f0;
     background: #ffffff;
