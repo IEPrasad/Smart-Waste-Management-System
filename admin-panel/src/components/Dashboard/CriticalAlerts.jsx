@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { AlertTriangle, Wrench, Fuel } from 'lucide-react';
+import { AlertTriangle, Wrench } from 'lucide-react';
 import CriticalIssuesModal from './CriticalIssuesModal';
 import MaintenanceModal from './MaintenanceModal';
+import { supabase } from '../../lib/supabaseClient';
 
 const Container = styled.div`
   display: grid;
@@ -46,17 +47,51 @@ const CriticalAlerts = () => {
   const [isIssuesOpen, setIsIssuesOpen] = useState(false);
   const [isMaintenanceOpen, setIsMaintenanceOpen] = useState(false);
 
+ 
+  const [criticalCount, setCriticalCount] = useState(0);
+  const [maintenanceCount, setMaintenanceCount] = useState(0);
+
+  useEffect(() => {
+    loadCounts();
+  }, []);
+
+  // number updates after resolve
+  useEffect(() => {
+    if (!isIssuesOpen) {
+      loadCounts();
+    }
+  }, [isIssuesOpen]);
+
+  async function loadCounts() {
+    // count high priority 
+    const { count: issueCount } = await supabase
+      .from('waste_issues')
+      .select('id', { count: 'exact', head: true })
+      .eq('priority', 'high')
+      .eq('status', 'open');
+
+   
+    const { count: vehicleCount } = await supabase
+      .from('vehicles')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'Maintenance');
+
+    setCriticalCount(issueCount || 0);
+    setMaintenanceCount(vehicleCount || 0);
+  }
+
   return (
     <Container>
       <AlertCard $color="#EF4444" $bg="#FEF2F2" onClick={() => setIsIssuesOpen(true)}>
         <Header $color="#DC2626"><AlertTriangle size={16} /> Critical Issues</Header>
-        <Message>3</Message>
-        <Sub>Requires immediate attention</Sub>
+        <Message>{criticalCount}</Message>
+        <Sub $color="#DC2626">Requires immediate attention</Sub>
       </AlertCard>
+
       <AlertCard $color="#F59E0B" $bg="#FFFBEB" onClick={() => setIsMaintenanceOpen(true)}>
         <Header $color="#D97706"><Wrench size={16} /> Maintenance</Header>
-        <Message>2</Message>
-        <Sub>Trucks due for service</Sub>
+        <Message>{maintenanceCount}</Message>
+        <Sub $color="#D97706">Trucks due for service</Sub>
       </AlertCard>
 
       <CriticalIssuesModal isOpen={isIssuesOpen} onClose={() => setIsIssuesOpen(false)} />
