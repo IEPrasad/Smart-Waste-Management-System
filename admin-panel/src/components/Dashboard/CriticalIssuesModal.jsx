@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertTriangle, Clock, MapPin, CheckCircle, ArrowRight } from 'lucide-react';
+import { X, AlertTriangle, Clock, MapPin, ArrowRight, ArrowLeft } from 'lucide-react';
+// connecting supabase to get real data
+import { supabase } from '../../lib/supabaseClient';
 
 const Overlay = styled(motion.div)`
   position: fixed; inset: 0;
@@ -29,8 +31,6 @@ const Header = styled.div`
   display: flex; justify-content: space-between; align-items: flex-start;
 `;
 
-const TitleBlock = styled.div``;
-
 const Title = styled.h3`
   font-size: 20px; font-weight: 800; color: #991B1B; margin: 0 0 4px 0;
   display: flex; align-items: center; gap: 8px;
@@ -41,45 +41,26 @@ const Subtitle = styled.p`
 `;
 
 const CloseButton = styled.button`
-  background: #EF4444;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  background: #EF4444; border: none; border-radius: 50%;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: white;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white;
-
-  &:hover {
-    background: #DC2626;
-    transform: rotate(90deg) scale(1.1);
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-  }
+  &:hover { background: #DC2626; transform: rotate(90deg) scale(1.1); }
 `;
 
 const Body = styled.div`
-  padding: 0;
-  overflow-y: auto;
-  background: #FAFAFA;
+  padding: 0; overflow-y: auto; background: #FAFAFA;
 `;
 
 const IssueItem = styled.div`
-  padding: 20px 24px;
-  border-bottom: 1px solid #E5E7EB;
-  background: white;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: #FEF2F2;
-  }
+  padding: 20px 24px; border-bottom: 1px solid #E5E7EB;
+  background: white; transition: all 0.2s;
+  &:hover { background: #FEF2F2; }
 `;
 
 const IssueHeader = styled.div`
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 8px;
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
 `;
 
 const SeverityBadge = styled.span`
@@ -99,24 +80,16 @@ const Description = styled.p`
 
 const Location = styled.div`
   display: flex; align-items: center; gap: 6px;
-  font-size: 13px; color: #4B5563;
-  margin-bottom: 16px;
+  font-size: 13px; color: #4B5563; margin-bottom: 16px;
 `;
 
-const Actions = styled.div`
-  display: flex; gap: 12px;
-`;
+const Actions = styled.div`display: flex; gap: 12px;`;
 
 const ActionButton = styled.button`
-  flex: 1;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px; font-weight: 600;
-  cursor: pointer;
+  flex: 1; padding: 8px 16px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: all 0.2s;
-  border: none;
-  
+  transition: all 0.2s; border: none;
   ${props => props.$primary ? `
     background: #DC2626; color: white;
     &:hover { background: #B91C1C; }
@@ -126,14 +99,93 @@ const ActionButton = styled.button`
   `}
 `;
 
-// Mock Data for specific critical view
-const CRITICAL_ISSUES = [
-  { id: 101, type: 'Hazardous Spill', desc: 'Chemical leakage reported near School Zone.', location: 'Zone A - Main St', time: '10 mins ago' },
-  { id: 102, type: 'Blocked Access', desc: 'Garbage truck cannot access narrow lane due to illegal parking.', location: 'Zone C - 5th Ave', time: '25 mins ago' },
-  { id: 103, type: 'Overflowing Bin', desc: 'Major overflow at central market causing health risk.', location: 'Zone B - Market', time: '1 hour ago' },
-];
+const DetailBody = styled.div`
+  padding: 24px; overflow-y: auto;
+`;
+
+const BackButton = styled.button`
+  background: none; border: none; cursor: pointer;
+  color: #6B7280; font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; padding: 0;
+  margin-bottom: 20px;
+  &:hover { color: #111827; }
+`;
+
+const DetailRow = styled.div`
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 14px 0; border-bottom: 1px solid #F3F4F6;
+`;
+
+const DetailLabel = styled.span`
+  font-size: 13px; color: #6B7280; font-weight: 500; flex-shrink: 0;
+`;
+
+const DetailValue = styled.span`
+  font-size: 13px; color: #111827; font-weight: 600;
+  text-align: right; max-width: 60%;
+`;
+
+const DetailFooter = styled.div`
+  display: flex; gap: 10px; margin-top: 24px;
+`;
 
 const CriticalIssuesModal = ({ isOpen, onClose }) => {
+
+  const [issues, setIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedIssue, setSelectedIssue] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadIssues();
+      setSelectedIssue(null);
+    }
+  }, [isOpen]);
+
+  async function loadIssues() {
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from('waste_issues')
+      .select('*, citizens(full_name, gn_division, division)')
+      .eq('priority', 'high')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('error:', error);
+    } else {
+      setIssues(data);
+    }
+    setLoading(false);
+  }
+
+  function getTimeAgo(timestamp) {
+    const now = new Date();
+    const created = new Date(timestamp);
+    const diffMins = Math.floor((now - created) / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${Math.floor(diffHours / 24)} days ago`;
+  }
+
+  async function resolveIssue(id) {
+    const { error } = await supabase
+      .from('waste_issues')
+      .update({ status: 'resolved' })
+      .eq('id', id);
+
+    if (error) {
+      console.error('resolve error:', error);
+    } else {
+      setIssues(prev => prev.filter(item => item.id !== id));
+      setSelectedIssue(null);
+    }
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -150,30 +202,114 @@ const CriticalIssuesModal = ({ isOpen, onClose }) => {
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
           onClick={e => e.stopPropagation()}
         >
-          <Header>
-            <TitleBlock>
-              <Title><AlertTriangle size={24} /> Critical Issues</Title>
-              <Subtitle>3 High-Priority incidents require immediate attention</Subtitle>
-            </TitleBlock>
-            <CloseButton onClick={onClose}><X size={20} strokeWidth={2.5} /></CloseButton>
-          </Header>
 
-          <Body>
-            {CRITICAL_ISSUES.map(issue => (
-              <IssueItem key={issue.id}>
-                <IssueHeader>
-                  <SeverityBadge>Critical</SeverityBadge>
-                  <Time><Clock size={14} /> {issue.time}</Time>
-                </IssueHeader>
-                <Description>{issue.desc}</Description>
-                <Location><MapPin size={14} /> {issue.location}</Location>
-                <Actions>
-                  <ActionButton>View Details</ActionButton>
-                  <ActionButton $primary>Resolve Now <ArrowRight size={14} /></ActionButton>
-                </Actions>
-              </IssueItem>
-            ))}
-          </Body>
+          {/* detail view */}
+          {selectedIssue ? (
+            <>
+              <Header>
+                <div>
+                  <Title><AlertTriangle size={24} /> Issue Details</Title>
+                  <Subtitle>Full information about this issue</Subtitle>
+                </div>
+                <CloseButton onClick={onClose}><X size={20} strokeWidth={2.5} /></CloseButton>
+              </Header>
+
+              <DetailBody>
+                <BackButton onClick={() => setSelectedIssue(null)}>
+                  <ArrowLeft size={16} /> Back to all issues
+                </BackButton>
+                <DetailRow>
+                  <DetailLabel>Issue ID</DetailLabel>
+                  <DetailValue>#{selectedIssue.id.slice(0, 8)}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Issue Type</DetailLabel>
+                  <DetailValue>{selectedIssue.issue_type}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Description</DetailLabel>
+                  <DetailValue>{selectedIssue.description}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Reported By</DetailLabel>
+                  <DetailValue>{selectedIssue.citizens?.full_name || 'Unknown'}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>GN Division</DetailLabel>
+                  <DetailValue>{selectedIssue.citizens?.gn_division || 'N/A'}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Division</DetailLabel>
+                  <DetailValue>{selectedIssue.citizens?.division || 'N/A'}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Priority</DetailLabel>
+                  <DetailValue style={{ color: '#DC2626' }}>HIGH</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Status</DetailLabel>
+                  <DetailValue>{selectedIssue.status}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Reported At</DetailLabel>
+                  <DetailValue>{new Date(selectedIssue.created_at).toLocaleString()}</DetailValue>
+                </DetailRow>
+
+                <DetailFooter>
+                  <ActionButton onClick={() => setSelectedIssue(null)}>Back</ActionButton>
+                  <ActionButton $primary onClick={() => resolveIssue(selectedIssue.id)}>
+                    Resolve Now <ArrowRight size={14} />
+                  </ActionButton>
+                </DetailFooter>
+              </DetailBody>
+            </>
+          ) : (
+            <>
+              {/* main list */}
+              <Header>
+                <div>
+                  <Title><AlertTriangle size={24} /> Critical Issues</Title>
+                  <Subtitle>{issues.length} High-Priority incidents require immediate attention</Subtitle>
+                </div>
+                <CloseButton onClick={onClose}><X size={20} strokeWidth={2.5} /></CloseButton>
+              </Header>
+
+              <Body>
+                {loading && (
+                  <p style={{ textAlign: 'center', padding: '30px', color: '#9CA3AF' }}>Loading...</p>
+                )}
+
+                {!loading && issues.length === 0 && (
+                  <p style={{ textAlign: 'center', padding: '30px', color: '#22C55E', fontWeight: 600 }}>
+                    ✓ No critical issues right now!
+                  </p>
+                )}
+
+                {!loading && issues.map(issue => (
+                  <IssueItem key={issue.id}>
+                    <IssueHeader>
+                      <SeverityBadge>Critical</SeverityBadge>
+                      <Time><Clock size={14} /> {getTimeAgo(issue.created_at)}</Time>
+                    </IssueHeader>
+                    <Description>{issue.description}</Description>
+                    <Location>
+                      <MapPin size={14} />
+                      {issue.citizens?.gn_division || 'N/A'} · {issue.citizens?.division || 'N/A'}
+                    </Location>
+                    <Actions>
+                      <ActionButton onClick={() => setSelectedIssue(issue)}>
+                        View Details
+                      </ActionButton>
+                      <ActionButton $primary onClick={() => resolveIssue(issue.id)}>
+                        Resolve Now <ArrowRight size={14} />
+                      </ActionButton>
+                    </Actions>
+                  </IssueItem>
+                ))}
+              </Body>
+            </>
+          )}
+
         </Content>
       </Overlay>
     </AnimatePresence>
