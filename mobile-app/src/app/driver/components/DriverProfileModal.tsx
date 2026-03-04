@@ -4,8 +4,9 @@ import {
 } from 'react-native';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
+import { uploadDriverPhoto } from '../../../services/driverService';
 
-import EditProfileModal from './EditProfileModal'; // ✅ NEW IMPORT
+import EditProfileModal from './EditProfileModal';
 
 const { width } = Dimensions.get('window');
 
@@ -19,8 +20,7 @@ interface DriverProfileModalProps {
 export default function DriverProfileModal({ visible, onClose, onLogout, onHistoryPress }: DriverProfileModalProps) {
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState<any>(null);
-
-    const [isEditVisible, setEditVisible] = useState(false); // ✅ NEW STATE
+    const [isEditVisible, setEditVisible] = useState(false);
 
     // Fetch Full Profile + Vehicle Details when opened
     useEffect(() => {
@@ -40,6 +40,7 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
                     full_name,
                     email,
                     mobile_number,
+                    photo_url,
                     vehicles (
                         vehicle_no,
                         model,
@@ -58,12 +59,39 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
         setLoading(false);
     };
 
+    const handleImagePick = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            setLoading(true);
+            const publicUrl = await uploadDriverPhoto(user.id, supabase);
+
+            if (publicUrl) {
+                // Update the driver table with the new URL
+                const { error } = await supabase
+                    .from('driver')
+                    .update({ photo_url: publicUrl })
+                    .eq('id', user.id);
+
+                if (error) throw error;
+
+                // Refresh local state to show the new image
+                fetchProfileData();
+                Alert.alert("Success", "Profile picture updated!");
+            }
+        } catch (error: any) {
+            Alert.alert("Upload Error", error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <Modal visible={visible} transparent animationType="fade">
             <TouchableOpacity style={styles.backdrop} onPress={onClose} activeOpacity={1}>
                 <View style={styles.card} onStartShouldSetResponder={() => true}>
 
-                    {/* Header: Close Button */}
                     <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
                         <MaterialIcons name="close" size={24} color="#666" />
                     </TouchableOpacity>
@@ -75,16 +103,27 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
                             {/* --- SECTION 1: DRIVER DETAILS --- */}
                             <Text style={styles.sectionTitle}>Driver Details</Text>
                             <View style={styles.driverRow}>
-                                <View style={styles.avatarCircle}>
-                                    <FontAwesome5 name="user" size={30} color="#fff" />
-                                </View>
+                                {/* PROFILE IMAGE SECTION */}
+                                <TouchableOpacity
+                                    style={styles.avatarCircle}
+                                    onPress={handleImagePick}
+                                    activeOpacity={0.7}
+                                >
+                                    {profile?.photo_url ? (
+                                        <Image source={{ uri: profile.photo_url }} style={styles.avatarImage} />
+                                    ) : (
+                                        <FontAwesome5 name="user" size={30} color="#fff" />
+                                    )}
+                                    <View style={styles.cameraIconBadge}>
+                                        <MaterialIcons name="photo-camera" size={14} color="white" />
+                                    </View>
+                                </TouchableOpacity>
 
                                 <View style={styles.driverInfo}>
                                     <Text style={styles.nameText}>{profile?.full_name || "Driver"}</Text>
                                     <Text style={styles.detailText}>{profile?.email}</Text>
                                     <Text style={styles.detailText}>{profile?.mobile_number || "No phone"}</Text>
 
-                                    {/* ✅ ADD EDIT PROFILE BUTTON */}
                                     <TouchableOpacity
                                         style={styles.editSmallBtn}
                                         onPress={() => setEditVisible(true)}
@@ -128,10 +167,12 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
                         </>
                     )}
 
-                    {/* ✅ EDIT PROFILE MODAL */}
                     <EditProfileModal
                         visible={isEditVisible}
-                        onClose={() => setEditVisible(false)}
+                        onClose={() => {
+                            setEditVisible(false);
+                            fetchProfileData(); // Refresh if details changed
+                        }}
                         currentEmail={profile?.email}
                         currentPhone={profile?.mobile_number}
                     />
@@ -143,64 +184,48 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
 
 const styles = StyleSheet.create({
     backdrop: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center', alignItems: 'center',
     },
     card: {
-        width: width * 0.85,
-        backgroundColor: 'white',
-        borderRadius: 25,
-        padding: 25,
-        elevation: 15,
-        shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10,
+        width: width * 0.85, backgroundColor: 'white', borderRadius: 25,
+        padding: 25, elevation: 15, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10,
     },
     closeBtn: { alignSelf: 'flex-end', padding: 5, marginBottom: 5 },
-
     sectionTitle: { fontSize: 16, fontWeight: 'bold', color: '#888', marginBottom: 10, textTransform: 'uppercase' },
-
     driverRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
+
     avatarCircle: {
-        width: 60, height: 60, borderRadius: 30, backgroundColor: '#ccc',
-        justifyContent: 'center', alignItems: 'center', marginRight: 15
+        width: 70, height: 70, borderRadius: 35, backgroundColor: '#ccc',
+        justifyContent: 'center', alignItems: 'center', marginRight: 15,
+        position: 'relative'
     },
+    avatarImage: { width: 70, height: 70, borderRadius: 35 },
+    cameraIconBadge: {
+        position: 'absolute', bottom: 0, right: 0,
+        backgroundColor: '#00e5bc', width: 24, height: 24, borderRadius: 12,
+        justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: 'white',
+    },
+
     driverInfo: { flex: 1 },
     nameText: { fontSize: 20, fontWeight: 'bold', color: '#333' },
     detailText: { fontSize: 14, color: '#666', marginTop: 2 },
-
-    /* ✅ NEW STYLES ONLY */
     editSmallBtn: {
-        marginTop: 8,
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#00e5bc',
-        alignSelf: 'flex-start'
+        marginTop: 8, paddingVertical: 5, paddingHorizontal: 10,
+        borderRadius: 5, borderWidth: 1, borderColor: '#00e5bc', alignSelf: 'flex-start'
     },
-    editSmallBtnText: {
-        fontSize: 12,
-        color: '#00e5bc',
-        fontWeight: 'bold'
-    },
-
+    editSmallBtnText: { fontSize: 12, color: '#00e5bc', fontWeight: 'bold' },
     divider: { height: 1, backgroundColor: '#eee', marginVertical: 15 },
-
     vehicleBox: { backgroundColor: '#f9f9f9', borderRadius: 15, padding: 15, marginBottom: 20 },
     vehicleRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
     label: { color: '#666', fontWeight: '600' },
     value: { color: '#333', fontWeight: 'bold' },
-
     historyBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        padding: 15, borderWidth: 1, borderColor: '#00e5bc', borderRadius: 12,
-        marginBottom: 10
+        padding: 15, borderWidth: 1, borderColor: '#00e5bc', borderRadius: 12, marginBottom: 10
     },
     historyText: { color: '#00e5bc', fontWeight: 'bold', fontSize: 16 },
-
     spacer: { height: 10 },
-
     logoutBtn: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         padding: 15, backgroundColor: '#F44336', borderRadius: 12
