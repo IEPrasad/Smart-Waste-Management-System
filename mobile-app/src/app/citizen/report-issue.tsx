@@ -11,19 +11,22 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@/lib/supabase';
+import { createWasteIssue } from '@/services/wasteIssues';
 
 type PriorityLevel = 'low' | 'medium' | 'high';
 type IssueType = 'missed-pickup' | 'damaged-bin' | 'incorrect-sorting' | 'other';
 
 export default function ReportIssueScreen() {
   const router = useRouter();
-  
+
   const [issueType, setIssueType] = useState<IssueType | null>(null);
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<PriorityLevel>('high');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [showIssueTypePicker, setShowIssueTypePicker] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const issueTypes = [
     { value: 'missed-pickup', label: 'Missed Pickup' },
@@ -36,7 +39,7 @@ export default function ReportIssueScreen() {
     Alert.alert('Photo Upload', 'Photo upload feature will be added soon!');
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validation
     if (!issueType) {
       Alert.alert('Error', 'Please select an issue type');
@@ -48,17 +51,48 @@ export default function ReportIssueScreen() {
       return;
     }
 
-    // Success
-    Alert.alert(
-      'Report Submitted!',
-      'Your report will be reviewed within 24 hours',
-      [
+    setIsSubmitting(true);
+
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.id) {
+        throw new Error(userError?.message || 'Unable to find your account');
+      }
+
+      const { error } = await createWasteIssue(
+        userData.user.id,
+        issueType,
+        description.trim(),
+        priority,
         {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
-    );
+          email: email || undefined,
+          mobileNo: phone || undefined,
+        }
+      );
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      Alert.alert(
+        'Report Submitted!',
+        'Your report will be reviewed within 24 hours',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong while submitting your report';
+      Alert.alert('Error', message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -220,11 +254,14 @@ export default function ReportIssueScreen() {
 
         {/* Submit Button */}
         <TouchableOpacity
-          style={styles.submitButton}
+          style={[styles.submitButton, isSubmitting && { opacity: 0.8 }]}
           onPress={handleSubmit}
           activeOpacity={0.8}
+          disabled={isSubmitting}
         >
-          <Text style={styles.submitButtonText}>Submit Issue Report</Text>
+          <Text style={styles.submitButtonText}>
+            {isSubmitting ? 'Submitting...' : 'Submit Issue Report'}
+          </Text>
         </TouchableOpacity>
 
         {/* Footer Note */}

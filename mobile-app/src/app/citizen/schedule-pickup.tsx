@@ -8,27 +8,47 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '@/lib/supabase';
+import { createWasteRequest } from '@/services/wasteRequests';
 
 export default function SchedulePickupScreen() {
   const router = useRouter();
-  
-  // State
-  const [selectedDate, setSelectedDate] = useState(15);
-  const [currentMonth, setCurrentMonth] = useState(0); // January = 0
-  const [currentYear, setCurrentYear] = useState(2026);
+
+  // Get today's date
+  const today = new Date();
+  const todayDate = today.getDate();
+  const todayMonth = today.getMonth();
+  const todayYear = today.getFullYear();
+
+  // State - auto-select today
+  const [selectedDate, setSelectedDate] = useState(todayDate);
+  const [currentMonth, setCurrentMonth] = useState(todayMonth);
+  const [currentYear, setCurrentYear] = useState(todayYear);
   const [wasteTypes, setWasteTypes] = useState({
     compost: false,
     recycling: false,
   });
   const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Calendar logic
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   const getDaysInMonth = (month: number, year: number) => {
@@ -51,41 +71,29 @@ export default function SchedulePickupScreen() {
         day: prevMonthDays - i,
         isCurrentMonth: false,
         isPast: true,
+        isToday: false,
+        isFuture: false,
       });
     }
 
     // Current month's days
     const today = new Date();
     const isCurrentMonth = currentMonth === today.getMonth() && currentYear === today.getFullYear();
-    
+
     for (let i = 1; i <= daysInMonth; i++) {
       const isPast = isCurrentMonth && i < today.getDate();
+      const isToday = isCurrentMonth && i === today.getDate();
+      const isFuture = isCurrentMonth && i > today.getDate();
       days.push({
         day: i,
         isCurrentMonth: true,
         isPast,
+        isToday,
+        isFuture,
       });
     }
 
     return days;
-  };
-
-  const handlePrevMonth = () => {
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
-    } else {
-      setCurrentMonth(currentMonth - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
-    } else {
-      setCurrentMonth(currentMonth + 1);
-    }
   };
 
   const toggleWasteType = (type: 'compost' | 'recycling') => {
@@ -95,14 +103,14 @@ export default function SchedulePickupScreen() {
     });
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // Validation
     if (!selectedDate) {
       Alert.alert('Error', 'Please select a date');
       return;
     }
 
-    const selectedTypes = [];
+    const selectedTypes: string[] = [];
     if (wasteTypes.compost) selectedTypes.push('Compost');
     if (wasteTypes.recycling) selectedTypes.push('Recycling');
 
@@ -111,17 +119,53 @@ export default function SchedulePickupScreen() {
       return;
     }
 
-    // Success
-    Alert.alert(
-      'Pickup Scheduled!',
-      `Date: ${monthNames[currentMonth]} ${selectedDate}, ${currentYear}\nWaste Types: ${selectedTypes.join(', ')}\nComment: ${comment || 'None'}`,
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
-    );
+    // Always use the current date/time since only today is selectable
+    const scheduledDate = new Date();
+
+    setIsSubmitting(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.id) {
+        throw new Error(userError?.message || 'Unable to find your account');
+      }
+
+      const { error } = await createWasteRequest(
+        userData.user.id,
+        selectedTypes,
+        scheduledDate,
+        comment || undefined
+      );
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      const hours = scheduledDate.getHours();
+      const minutes = scheduledDate.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const displayMinutes = minutes.toString().padStart(2, '0');
+      const timeString = `${displayHours}:${displayMinutes} ${ampm}`;
+
+      Alert.alert(
+        'Pickup Scheduled!',
+        `Date: ${monthNames[currentMonth]} ${selectedDate}, ${currentYear}\nTime: ${timeString}\nWaste Types: ${selectedTypes.join(', ')}\nComment: ${comment || 'None'}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Something went wrong while scheduling your pickup';
+      Alert.alert('Error', message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const calendarDays = generateCalendarDays();
@@ -129,7 +173,7 @@ export default function SchedulePickupScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -142,21 +186,17 @@ export default function SchedulePickupScreen() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Select Date Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Select Date</Text>
-          
+          <Text style={styles.sectionTitle}>Date</Text>
+
           {/* Calendar */}
           <View style={styles.calendarContainer}>
             {/* Month Navigation */}
             <View style={styles.monthNavigation}>
-              <TouchableOpacity onPress={handlePrevMonth} style={styles.monthArrow}>
-                <Ionicons name="chevron-back" size={20} color="#000000" />
-              </TouchableOpacity>
+              <View style={styles.monthArrow} />
               <Text style={styles.monthYear}>
                 {monthNames[currentMonth]} {currentYear}
               </Text>
-              <TouchableOpacity onPress={handleNextMonth} style={styles.monthArrow}>
-                <Ionicons name="chevron-forward" size={20} color="#000000" />
-              </TouchableOpacity>
+              <View style={styles.monthArrow} />
             </View>
 
             {/* Day Headers */}
@@ -175,15 +215,16 @@ export default function SchedulePickupScreen() {
                   key={index}
                   style={styles.dayCell}
                   onPress={() => {
-                    if (item.isCurrentMonth && !item.isPast) {
+                    if (item.isToday) {
                       setSelectedDate(item.day);
                     }
                   }}
-                  disabled={!item.isCurrentMonth || item.isPast}
+                  disabled={!item.isToday}
                 >
                   <View
                     style={[
                       styles.dayCellInner,
+                      item.isToday && styles.todayIndicator,
                       selectedDate === item.day && item.isCurrentMonth && styles.selectedDay,
                     ]}
                   >
@@ -192,6 +233,7 @@ export default function SchedulePickupScreen() {
                         styles.dayText,
                         !item.isCurrentMonth && styles.dayTextDisabled,
                         item.isPast && styles.dayTextPast,
+                        item.isFuture && styles.dayTextFuture,
                         selectedDate === item.day && item.isCurrentMonth && styles.selectedDayText,
                       ]}
                     >
@@ -207,17 +249,12 @@ export default function SchedulePickupScreen() {
         {/* Waste Type Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Waste Type</Text>
-          
+
           {/* Compost */}
-          <TouchableOpacity
-            style={styles.wasteTypeCard}
-            onPress={() => toggleWasteType('compost')}
-          >
+          <TouchableOpacity style={styles.wasteTypeCard} onPress={() => toggleWasteType('compost')}>
             <View style={styles.wasteTypeLeft}>
               <View style={[styles.checkbox, wasteTypes.compost && styles.checkboxChecked]}>
-                {wasteTypes.compost && (
-                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                )}
+                {wasteTypes.compost && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
               </View>
               <Ionicons name="leaf" size={20} color="#10B981" />
               <Text style={styles.wasteTypeText}>Compost</Text>
@@ -231,9 +268,7 @@ export default function SchedulePickupScreen() {
           >
             <View style={styles.wasteTypeLeft}>
               <View style={[styles.checkbox, wasteTypes.recycling && styles.checkboxChecked]}>
-                {wasteTypes.recycling && (
-                  <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                )}
+                {wasteTypes.recycling && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
               </View>
               <Ionicons name="sync" size={20} color="#3B82F6" />
               <Text style={styles.wasteTypeText}>Recycling</Text>
@@ -258,11 +293,17 @@ export default function SchedulePickupScreen() {
 
         {/* Confirm Button */}
         <TouchableOpacity
-          style={styles.confirmButton}
+          style={[styles.confirmButton, isSubmitting && styles.confirmButtonDisabled]}
           onPress={handleConfirm}
           activeOpacity={0.8}
+          disabled={isSubmitting}
         >
-          <Text style={styles.confirmButtonText}>Confirm Pickup</Text>
+          <View style={styles.confirmButtonContent}>
+            {isSubmitting && <ActivityIndicator color="#FFFFFF" style={styles.spinner} />}
+            <Text style={styles.confirmButtonText}>
+              {isSubmitting ? 'Scheduling...' : 'Confirm Pickup'}
+            </Text>
+          </View>
         </TouchableOpacity>
 
         <View style={{ height: 40 }} />
@@ -371,6 +412,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  todayIndicator: {
+    borderWidth: 2,
+    borderColor: '#10B981',
+    borderRadius: 8,
+  },
   selectedDay: {
     backgroundColor: '#10B981',
     borderRadius: 8,
@@ -384,6 +430,9 @@ const styles = StyleSheet.create({
     color: '#D1D5DB',
   },
   dayTextPast: {
+    color: '#D1D5DB',
+  },
+  dayTextFuture: {
     color: '#D1D5DB',
   },
   selectedDayText: {
@@ -445,6 +494,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 4,
+  },
+  confirmButtonDisabled: {
+    opacity: 0.8,
+  },
+  confirmButtonContent: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spinner: {
+    marginRight: 8,
   },
   confirmButtonText: {
     fontSize: 15,

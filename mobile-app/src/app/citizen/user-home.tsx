@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,89 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { supabase } from '@/lib/supabase';
+import {
+  getActivePickup,
+  calculateDistance,
+  estimateArrivalTime,
+} from '@/services/pickupTracking';
+import type { ActivePickup } from '@/services/pickupTracking';
 
 export default function UserHomeScreen() {
   const router = useRouter();
 
-  React.useEffect(() => {
+  const [activePickup, setActivePickup] = useState<ActivePickup | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [eta, setEta] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const mapRef = useRef<MapView>(null);
+
+  useEffect(() => {
+    fetchActivePickup();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchActivePickup, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchActivePickup = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await getActivePickup(user.id);
+
+      if (error) {
+        console.log('No active pickup:', error);
+      }
+
+      if (data && data.user_location && data.driver_location) {
+        setActivePickup(data);
+
+        // Calculate distance and ETA
+        const dist = calculateDistance(
+          data.user_location.latitude,
+          data.user_location.longitude,
+          data.driver_location.lat,
+          data.driver_location.lng
+        );
+        setDistance(dist);
+        setEta(estimateArrivalTime(dist));
+
+        // Fit map to show both markers
+        if (mapRef.current) {
+          mapRef.current.fitToCoordinates(
+            [
+              {
+                latitude: data.user_location.latitude,
+                longitude: data.user_location.longitude,
+              },
+              {
+                latitude: data.driver_location.lat,
+                longitude: data.driver_location.lng,
+              },
+            ],
+            {
+              edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
+              animated: true,
+            }
+          );
+        }
+      } else {
+        setActivePickup(null);
+        setDistance(null);
+        setEta(null);
+      }
+    } catch (error) {
+      console.error('Error fetching pickup:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     router.setParams({ headerShown: 'false' });
   }, []);
 
@@ -28,11 +105,15 @@ export default function UserHomeScreen() {
           <Text style={styles.welcomeText}>Welcome, User</Text>
           <Text style={styles.subtitleText}>Your waste pickup assistant</Text>
         </View>
+        
+        {/* Profile Picture */}
         <TouchableOpacity 
-          style={styles.logoutButton}
-          //onPress={() => router.replace('/welcome')}
+          style={styles.profileButton}
+          onPress={() => router.push('/citizen/user-profile')}
         >
-          <Ionicons name="power" size={26} color="#EF4444" />
+          <View style={styles.profileCircle}>
+            <Ionicons name="person" size={24} color="#10B981" />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -43,23 +124,75 @@ export default function UserHomeScreen() {
         {/* Map Card with Google Maps */}
         <View style={styles.mapCard}>
           <MapView
+            ref={mapRef}
             provider={PROVIDER_GOOGLE}
             style={styles.map}
             initialRegion={{
-              latitude: 6.9271,
-              longitude: 79.8612,
+              latitude: activePickup?.user_location?.latitude || 6.9271,
+              longitude: activePickup?.user_location?.longitude || 79.8612,
               latitudeDelta: 0.02,
               longitudeDelta: 0.02,
             }}
-          />
+          >
+            {/* User location marker */}
+            {activePickup?.user_location && (
+              <Marker
+                coordinate={{
+                  latitude: activePickup.user_location.latitude,
+                  longitude: activePickup.user_location.longitude,
+                }}
+                title="Your Location"
+                pinColor="#EF4444"
+              />
+            )}
+
+            {/* Driver location marker */}
+            {activePickup?.driver_location && (
+              <Marker
+                coordinate={{
+                  latitude: activePickup.driver_location.lat,
+                  longitude: activePickup.driver_location.lng,
+                }}
+                title="Driver"
+                description="Waste collection vehicle"
+                pinColor="#3B82F6"
+              >
+                <View style={styles.driverMarker}>
+                  <Ionicons name="car" size={24} color="#FFFFFF" />
+                </View>
+              </Marker>
+            )}
+
+            {/* Blue route line between user and driver */}
+            {activePickup?.user_location && activePickup?.driver_location && (
+              <Polyline
+                coordinates={[
+                  {
+                    latitude: activePickup.user_location.latitude,
+                    longitude: activePickup.user_location.longitude,
+                  },
+                  {
+                    latitude: activePickup.driver_location.lat,
+                    longitude: activePickup.driver_location.lng,
+                  },
+                ]}
+                strokeColor="#3B82F6"
+                strokeWidth={4}
+              />
+            )}
+          </MapView>
         </View>
 
         {/* Live Tracking Card */}
         <View style={styles.trackingCard}>
           <Text style={styles.trackingTitle}>Live Tracking</Text>
-          <Text style={styles.trackingSubtitle}>
-            Tractor is 1.2 km away, arriving in 8 minutes
-          </Text>
+          {activePickup && distance !== null && eta !== null ? (
+            <Text style={styles.trackingSubtitle}>
+              Tractor is {distance.toFixed(1)} km away, arriving in {eta} minutes
+            </Text>
+          ) : (
+            <Text style={styles.trackingSubtitle}>No active pickup scheduled</Text>
+          )}
         </View>
 
         {/* Quick Actions */}
@@ -73,7 +206,7 @@ export default function UserHomeScreen() {
               onPress={() => router.push('/citizen/schedule-pickup')}
             >
               <View style={[styles.actionIconCircle, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="calendar" size={32} color="#10B981" />
+                <Ionicons name="calendar" size={26} color="#10B981" />
               </View>
               <Text style={styles.actionButtonText}>Schedule Pickup</Text>
             </TouchableOpacity>
@@ -84,7 +217,7 @@ export default function UserHomeScreen() {
               onPress={() => router.push('/citizen/sort-trash')}
             >
               <View style={[styles.actionIconCircle, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="leaf" size={32} color="#10B981" />
+                <Ionicons name="leaf" size={26} color="#10B981" />
               </View>
               <Text style={styles.actionButtonText}>Sort Trash</Text>
             </TouchableOpacity>
@@ -125,14 +258,6 @@ export default function UserHomeScreen() {
           <Ionicons name="mail-outline" size={28} color="#9CA3AF" />
           <Text style={styles.navText}>Messages</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push('/citizen/user-profile')}
-        >
-          <Ionicons name="person-circle-outline" size={28} color="#9CA3AF" />
-          <Text style={styles.navText}>Profile</Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -164,17 +289,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   subtitleText: {
-    fontSize: 15,
+    fontSize: 18,
     color: '#6B7280',
     fontWeight: '400',
   },
-  logoutButton: {
+  profileButton: {
+    marginLeft: 12,
+  },
+  profileCircle: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'transparent',
+    backgroundColor: '#D1FAE5',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#10B981',
   },
   scrollView: {
     flex: 1,
@@ -183,7 +313,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 20,
     borderRadius: 20,
-    height: 280,
+    height: 325,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -198,9 +328,9 @@ const styles = StyleSheet.create({
   trackingCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: -60,
+    marginTop: -50,
     borderRadius: 16,
-    padding: 20,
+    padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -209,25 +339,25 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   trackingTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   trackingSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#6B7280',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   quickActionsContainer: {
     marginHorizontal: 20,
     marginTop: 32,
   },
   quickActionsTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   actionButtonsRow: {
     flexDirection: 'row',
@@ -236,8 +366,8 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 14,
     alignItems: 'center',
     marginHorizontal: 6,
     shadowColor: '#000',
@@ -247,15 +377,15 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   actionIconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   actionButtonText: {
-    fontSize: 15,
+    fontSize: 15.2,
     fontWeight: '600',
     color: '#111827',
     textAlign: 'center',
@@ -290,5 +420,12 @@ const styles = StyleSheet.create({
   navTextActive: {
     color: '#10B981',
     fontWeight: '600',
+  },
+  driverMarker: {
+    backgroundColor: '#3B82F6',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
 });
