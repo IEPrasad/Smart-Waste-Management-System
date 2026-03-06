@@ -57,12 +57,12 @@ const QuickActions = () => {
       const data = await generateOperationalReportData();
       setReportData(data);
 
-      // Small timeout to allow the ReportTemplate to render in the DOM
+      // Increased timeout to allow Recharts to calculate dimensions and mount
       setTimeout(() => {
         window.print();
         toast.success('Report generated successfully', { id });
         setIsGenerating(false);
-      }, 500);
+      }, 1500);
 
     } catch (error) {
       console.error('Report generation failed:', error);
