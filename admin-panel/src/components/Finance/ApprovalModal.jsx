@@ -418,8 +418,10 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                         </Button>
                       ) : (
                         <PayPalButtons
+                          key={`${paymentMethod}-${request.id}`}
+                          forceReRender={[paymentMethod, request.cash]}
                           style={{
-                            layout: 'horizontal',
+                            layout: 'vertical',
                             height: 44,
                             color: 'blue',
                             label: paymentMethod === 'card' ? 'buynow' : 'pay',
@@ -444,6 +446,7 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                           }}
                           onError={(err) => {
                             console.error('Payment Error:', err);
+                            toast.error('Payment gateway failed to load. Try another method.');
                           }}
                         />
                       )}
