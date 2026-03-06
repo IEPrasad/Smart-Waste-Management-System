@@ -242,6 +242,7 @@ const TextArea = styled.textarea`
   border-radius: 12px;
   border: 2px solid #FECACA;
   background: #FFF;
+  color: #0F172A;
   font-size: 14px;
   resize: vertical;
   outline: none;
