@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send } from 'lucide-react';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const Overlay = styled(motion.div)`
   position: fixed; inset: 0;
@@ -112,6 +113,9 @@ const Button = styled.button`
 
 const ReplyIssueModal = ({ isOpen, onClose, issue, onReply, isSubmitting }) => {
   const [replyText, setReplyText] = useState('');
+
+  // Use Escape key to close
+  useEscapeKey(onClose, isOpen);
 
   if (!isOpen || !issue) return null;
 

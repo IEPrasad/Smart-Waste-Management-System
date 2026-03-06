@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, CheckCircle, XCircle, Wallet, CreditCard, Smartphone } from 'lucide-react';
 import { PayPalButtons } from "@paypal/react-paypal-js";
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const Overlay = styled(motion.div)`
   position: fixed;
@@ -222,9 +223,46 @@ const BankValue = styled.span`
   font-weight: 700;
 `;
 
+const RejectionSection = styled.div`
+  margin-top: 16px;
+`;
+
+const NoteLabel = styled.label`
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #991B1B;
+  margin-bottom: 8px;
+`;
+
+const TextArea = styled.textarea`
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid #FECACA;
+  background: #FFF;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+  
+  &:focus {
+    border-color: #EF4444;
+  }
+  
+  &::placeholder {
+    color: #94A3B8;
+  }
+`;
+
 const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [isHelakuruProcessing, setIsHelakuruProcessing] = useState(false);
+  const [rejectionNote, setRejectionNote] = useState('');
+
+  // Use Escape key to close
+  useEscapeKey(onClose, isOpen);
 
   if (!isOpen || !request) return null;
 
@@ -311,6 +349,17 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
             )}
 
             <Message>{config.message}</Message>
+
+            {!isApprove && (
+              <RejectionSection>
+                <NoteLabel>Reason for Rejection (Optional)</NoteLabel>
+                <TextArea
+                  placeholder="Explain why this request is being rejected..."
+                  value={rejectionNote}
+                  onChange={(e) => setRejectionNote(e.target.value)}
+                />
+              </RejectionSection>
+            )}
 
             {isApprove && (
               <MethodSelector>
@@ -399,7 +448,7 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                   </AnimatePresence>
                 </div>
               ) : (
-                <Button $primary $bg={config.buttonBg} onClick={onConfirm}>
+                <Button $primary $bg={config.buttonBg} onClick={() => onConfirm(rejectionNote)}>
                   Confirm Rejection
                 </Button>
               )}

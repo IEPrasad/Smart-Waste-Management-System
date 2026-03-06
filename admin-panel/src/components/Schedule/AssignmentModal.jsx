@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, User, Truck, Radio, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled, { css } from 'styled-components';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 // --- Styled Components ---
 
@@ -229,14 +230,8 @@ const AssignmentModal = ({ isOpen, onClose, drivers = [], requestIds = [], onAss
         }
     };
 
-    // Close on Escape key
-    React.useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-        if (isOpen) window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [isOpen, onClose]);
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     if (!isOpen) return null;
 

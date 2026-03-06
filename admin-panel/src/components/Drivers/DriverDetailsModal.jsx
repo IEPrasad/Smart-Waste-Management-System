@@ -11,12 +11,16 @@ import CircleIcon from '@mui/icons-material/Circle';
 import HistoryIcon from '@mui/icons-material/History';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getDriverPickupLogs } from '../../services/driverService';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const DriverDetailsModal = ({ isOpen, onClose, driver }) => {
     const [pickupLogs, setPickupLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
     const [logsError, setLogsError] = useState(null);
     const [selectedFilter, setSelectedFilter] = useState('all');
+
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     // Time filter options
     const filterOptions = [

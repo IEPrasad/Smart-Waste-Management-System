@@ -2,6 +2,7 @@ import React from 'react';
 import './AddDriverModal.css';
 import CloseIcon from '@mui/icons-material/Close';
 import { supabase } from '../../lib/supabaseClient';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const AddDriverModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = React.useState({
@@ -13,6 +14,9 @@ const AddDriverModal = ({ isOpen, onClose }) => {
     });
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState(null);
+
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     // Reset form when modal opens/closes
     React.useEffect(() => {
