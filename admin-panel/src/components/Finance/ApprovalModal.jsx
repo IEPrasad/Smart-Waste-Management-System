@@ -23,10 +23,13 @@ const Content = styled(motion.div)`
   background: white;
   width: 100%;
   max-width: 550px;
+  max-height: 90vh;
   border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
 `;
 
 const Header = styled.div`
@@ -72,6 +75,23 @@ const CloseButton = styled.button`
 
 const Body = styled.div`
   padding: 32px;
+  overflow-y: auto;
+  flex: 1;
+
+  /* Custom Scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #E2E8F0;
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #CBD5E1;
+  }
 `;
 
 const SectionHeader = styled.div`
