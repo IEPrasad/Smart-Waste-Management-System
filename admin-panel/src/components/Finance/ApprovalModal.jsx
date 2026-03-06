@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, CheckCircle, XCircle, Wallet, CreditCard, Smartphone, Lock } from 'lucide-react';
-import { PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalButtons, PayPalCardFieldsProvider, PayPalCardFieldsForm, usePayPalCardFields } from "@paypal/react-paypal-js";
+import toast from 'react-hot-toast';
 import useEscapeKey from '../../hooks/useEscapeKey';
 import visaLogo from '../../assets/visa_logo.png';
 import helakuruLogo from '../../assets/helakuru_logo.png';
@@ -313,6 +314,34 @@ const TextArea = styled.textarea`
   }
 `;
 
+const SubmitCardButton = ({ amount }) => {
+  const { isPending, cardFields } = usePayPalCardFields();
+
+  const handleClick = async () => {
+    if (!cardFields) {
+      toast.error('Card fields not loaded yet.');
+      return;
+    }
+    try {
+      await cardFields.submit();
+    } catch (err) {
+      console.error('Card Submit Error:', err);
+    }
+  };
+
+  return (
+    <Button
+      $primary
+      $bg="#1A1F71"
+      style={{ width: '100%', marginTop: 20 }}
+      disabled={isPending}
+      onClick={handleClick}
+    >
+      {isPending ? 'Processing Payment...' : `Confirm LKR ${amount.toLocaleString()} Payment`}
+    </Button>
+  );
+};
+
 const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [isHelakuruProcessing, setIsHelakuruProcessing] = useState(false);
@@ -457,18 +486,35 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                         </Button>
                       ) : (
                         <>
-                          {paymentMethod === 'card' && (
-                            <SecureCardHeader>
-                              <Lock size={14} /> Secure Card Checkout
-                            </SecureCardHeader>
-                          )}
-                          <div style={{
-                            background: paymentMethod === 'card' ? 'white' : 'transparent',
-                            borderRadius: 12,
-                            padding: paymentMethod === 'card' ? '16px 16px 4px 16px' : 0,
-                            border: paymentMethod === 'card' ? '1px solid #E2E8F0' : 'none',
-                            boxShadow: paymentMethod === 'card' ? '0 4px 6px -1px rgba(0, 0, 0, 0.05)' : 'none'
-                          }}>
+                          {paymentMethod === 'card' ? (
+                            <div style={{ background: 'white', borderRadius: 16, padding: '24px', border: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                              <SecureCardHeader>
+                                <Lock size={14} /> Secure Card Checkout
+                              </SecureCardHeader>
+                              <PayPalCardFieldsProvider
+                                createOrder={(data, actions) => {
+                                  const usdAmount = (request.cash / 300).toFixed(2);
+                                  return actions.order.create({
+                                    purchase_units: [{
+                                      amount: { value: usdAmount, currency_code: 'USD' },
+                                      description: `Reward Withdrawal for ${request.citizen} via Visa/Card`
+                                    }],
+                                  });
+                                }}
+                                onApprove={async (data, actions) => {
+                                  const details = await actions.order.capture();
+                                  onConfirm(`CARD ID: ${details.id}`);
+                                }}
+                                onError={(err) => {
+                                  console.error('Card field error:', err);
+                                  toast.error('Card payment failed. Please check your details.');
+                                }}
+                              >
+                                <PayPalCardFieldsForm />
+                                <SubmitCardButton amount={request.cash} />
+                              </PayPalCardFieldsProvider>
+                            </div>
+                          ) : (
                             <PayPalButtons
                               key={`${paymentMethod}-${request.id}`}
                               forceReRender={[paymentMethod, request.cash]}
@@ -476,10 +522,9 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                                 layout: 'vertical',
                                 height: 48,
                                 color: 'blue',
-                                label: paymentMethod === 'card' ? 'buynow' : 'pay',
+                                label: 'pay',
                                 tagline: false
                               }}
-                              fundingSource={paymentMethod === 'card' ? 'card' : undefined}
                               createOrder={(data, actions) => {
                                 const usdAmount = (request.cash / 300).toFixed(2);
                                 return actions.order.create({
@@ -498,7 +543,7 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                                 toast.error('Payment interface failed to load.');
                               }}
                             />
-                          </div>
+                          )}
                         </>
                       )}
                     </motion.div>

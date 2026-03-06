@@ -144,6 +144,8 @@ const Finance = () => {
     "client-id": "test", // Replace with your real PayPal Client ID later
     currency: "USD",
     intent: "capture",
+    components: "buttons,card-fields",
+    "data-sdk-integration-source": "react-paypal-js",
   };
 
   if (loading) return <PageContainer>Loading metrics...</PageContainer>;
