@@ -8,7 +8,6 @@
     "scheme": "wastewiseapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.WastE-wise-app",
@@ -16,7 +15,6 @@
         "googleMapsApiKey": "YOUR_IOS_API_KEY_HERE"
       }
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -33,12 +31,10 @@
         }
       }
     },
-
     "web": {
       "output": "static",
       "favicon": "./src/assets/images/favicon.png"
     },
-
     "plugins": [
       "expo-router",
       [
@@ -55,10 +51,15 @@
       ],
       "expo-secure-store"
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8ec01a8b-eb0a-4f8c-ac34-da442f239471"
+      }
     }
   }
 }

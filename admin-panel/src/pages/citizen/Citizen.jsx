@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Citizen.css';
 import StatsCard from '../../components/Citizen/StatsCard/StatsCard';
 import CitizenTable from '../../components/Citizen/CitizenTable/CitizenTable';
+import CitizenDetailsModal from '../../components/Citizen/CitizenDetailsModal/CitizenDetailsModal';
 import { getCitizenCounts, getCitizensByStatus, getAllCitizens } from '../../services/citizenService';
 
 // Material UI Icons
@@ -32,34 +33,34 @@ const Citizen = () => {
     // Loading state
     const [isLoading, setIsLoading] = useState(true);
 
-    // Fetch counts on mount
-    useEffect(() => {
-        const fetchCounts = async () => {
-            const data = await getCitizenCounts();
-            setCounts(data);
-        };
-        fetchCounts();
-    }, []);
+    // Modal state
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedCitizen, setSelectedCitizen] = useState(null);
 
-    // Fetch citizens when status changes
-    useEffect(() => {
-        const fetchCitizens = async () => {
-            setIsLoading(true);
+    // Fetch data function
+    const fetchData = React.useCallback(async () => {
+        setIsLoading(true);
+        // Fetch counts
+        const countsData = await getCitizenCounts();
+        setCounts(countsData);
 
-            let result;
-            if (selectedStatus === 'total') {
-                // For "Total Citizens", fetch all approved citizens
-                result = await getAllCitizens();
-            } else {
-                // For other statuses, use the status filter
-                result = await getCitizensByStatus(selectedStatus);
-            }
-
-            setCitizens(result.data || []);
-            setIsLoading(false);
-        };
-        fetchCitizens();
+        // Fetch table data
+        let result;
+        if (selectedStatus === 'total') {
+            result = await getAllCitizens();
+        } else {
+            result = await getCitizensByStatus(selectedStatus);
+        }
+        setCitizens(result.data || []);
+        setIsLoading(false);
     }, [selectedStatus]);
+
+    // Fetch on mount and when status changes
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+
 
     // Handle card click to change filter
     const handleCardClick = (status) => {
@@ -68,8 +69,18 @@ const Citizen = () => {
 
     // Handle view citizen action
     const handleViewCitizen = (citizen) => {
-        // TODO: Open citizen details modal or navigate to details page
-        console.log('View citizen:', citizen);
+        setSelectedCitizen(citizen);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedCitizen(null);
+    };
+
+    const handleActionSuccess = () => {
+        handleCloseModal();
+        fetchData();
     };
 
     // Get table title based on selected status
@@ -135,6 +146,13 @@ const Citizen = () => {
                     onViewCitizen={handleViewCitizen}
                 />
             </div>
+
+            <CitizenDetailsModal
+                open={isModalOpen}
+                onClose={handleCloseModal}
+                citizen={selectedCitizen}
+                onActionSuccess={handleActionSuccess}
+            />
         </div>
     );
 };

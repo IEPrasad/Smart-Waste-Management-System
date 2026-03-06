@@ -1,22 +1,31 @@
-/* Stats Card Base */
+/* ===== Stats Card - Finance KPI Style ===== */
 .stats-card {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px 24px;
-    background: #ffffff;
-    border-radius: 16px;
+    border-radius: 20px;
+    padding: 24px;
+    color: white;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 2px solid transparent;
-    min-width: 180px;
-    flex: 1;
     user-select: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+    flex: 1;
+    min-width: 180px;
+    opacity: 0.85;
 }
 
 .stats-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.2);
+    opacity: 1;
+}
+
+.stats-card--active {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.25);
+    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
 }
 
 .stats-card:focus {
@@ -24,10 +33,26 @@
 }
 
 .stats-card:focus-visible {
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    outline: 3px solid rgba(255, 255, 255, 0.8);
+    outline-offset: 2px;
 }
 
-/* Icon Wrapper */
+/* ===== Header Row (label + icon) ===== */
+.stats-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.stats-card__label {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.92;
+    letter-spacing: 0.01em;
+}
+
+/* ===== Icon ===== */
 .stats-card__icon-wrapper {
     flex-shrink: 0;
 }
@@ -35,130 +60,80 @@
 .stats-card__icon {
     width: 48px;
     height: 48px;
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
+    transition: background 0.2s ease;
+}
+
+.stats-card:hover .stats-card__icon {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .stats-card__icon svg {
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
+    color: white;
 }
 
-/* Content */
-.stats-card__content {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.stats-card__title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #64748b;
-    white-space: nowrap;
-}
-
-.stats-card__count {
-    font-size: 28px;
-    font-weight: 700;
-    color: #1e293b;
+/* ===== Value ===== */
+.stats-card__value {
+    font-size: 36px;
+    font-weight: 800;
     line-height: 1.1;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
 }
 
-/* ===== Variant: Total (Green) ===== */
-.stats-card--total .stats-card__icon {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    color: #16a34a;
+/* ===== Trend ===== */
+.stats-card__trend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    opacity: 0.9;
+    font-weight: 500;
 }
 
-.stats-card--total.stats-card--active {
-    border-color: #22c55e;
-    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
-    box-shadow: 0 4px 20px rgba(34, 197, 94, 0.15);
+/* ===== Variant: Total Citizens (Green) ===== */
+.stats-card--total {
+    background: linear-gradient(135deg, #10B981 0%, #047857 100%);
 }
 
-.stats-card--total.stats-card--active .stats-card__title {
-    color: #16a34a;
+/* ===== Variant: Pending (Amber/Gold) ===== */
+.stats-card--pending {
+    background: linear-gradient(135deg, #F59E0B 0%, #B45309 100%);
 }
 
-/* ===== Variant: Pending (Yellow/Gold) ===== */
-.stats-card--pending .stats-card__icon {
-    background: linear-gradient(135deg, #fef9c3 0%, #fef08a 100%);
-    color: #ca8a04;
+/* ===== Variant: Rejected (Red) ===== */
+.stats-card--rejected {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
 }
 
-.stats-card--pending.stats-card--active {
-    border-color: #eab308;
-    background: linear-gradient(135deg, #ffffff 0%, #fefce8 100%);
-    box-shadow: 0 4px 20px rgba(234, 179, 8, 0.15);
+/* ===== Variant: Suspended (Purple/Rose) ===== */
+.stats-card--suspended {
+    background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
 }
 
-.stats-card--pending.stats-card--active .stats-card__title {
-    color: #ca8a04;
-}
-
-/* ===== Variant: Rejected (Red/Coral) ===== */
-.stats-card--rejected .stats-card__icon {
-    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    color: #dc2626;
-}
-
-.stats-card--rejected.stats-card--active {
-    border-color: hsl(17, 89%, 55%);
-    background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);
-}
-
-.stats-card--rejected.stats-card--active .stats-card__title {
-    color: #dc2626;
-}
-
-/* ===== Variant: Suspended (Pink/Rose) ===== */
-.stats-card--suspended .stats-card__icon {
-    background: linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%);
-    color: #e11d48;
-}
-
-.stats-card--suspended.stats-card--active {
-    border-color: #f43f5e;
-    background: linear-gradient(135deg, #ffffff 0%, #fff1f2 100%);
-    box-shadow: 0 4px 20px rgba(244, 63, 94, 0.15);
-}
-
-.stats-card--suspended.stats-card--active .stats-card__title {
-    color: #e11d48;
-}
-
-/* Responsive Adjustments */
-@media (max-width: 1200px) {
+/* ===== Responsive ===== */
+@media (max-width: 1280px) {
     .stats-card {
-        padding: 14px 20px;
+        padding: 20px;
         min-width: 160px;
     }
 
-    .stats-card__icon {
-        width: 44px;
-        height: 44px;
-    }
-
-    .stats-card__icon svg {
-        width: 24px;
-        height: 24px;
-    }
-
-    .stats-card__count {
-        font-size: 24px;
+    .stats-card__value {
+        font-size: 30px;
     }
 }
 
 @media (max-width: 768px) {
     .stats-card {
-        padding: 12px 16px;
+        padding: 16px;
         min-width: 140px;
-        gap: 12px;
+        border-radius: 16px;
     }
 
     .stats-card__icon {
@@ -166,11 +141,16 @@
         height: 40px;
     }
 
-    .stats-card__title {
-        font-size: 12px;
+    .stats-card__icon svg {
+        width: 20px;
+        height: 20px;
     }
 
-    .stats-card__count {
-        font-size: 20px;
+    .stats-card__value {
+        font-size: 26px;
+    }
+
+    .stats-card__label {
+        font-size: 12px;
     }
 }
