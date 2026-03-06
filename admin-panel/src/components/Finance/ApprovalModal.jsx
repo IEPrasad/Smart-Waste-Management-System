@@ -136,8 +136,9 @@ const MethodCard = styled.div`
   border-radius: 12px;
   border: 2px solid ${props => {
     if (!props.$active) return '#E2E8F0';
+    if (!props.$active) return '#E2E8F0';
     if (props.$method === 'paypal') return '#0070BA';
-    if (props.$method === 'card') return '#1434CB';
+    if (props.$method === 'card') return '#1A1F71';
     if (props.$method === 'helakuru') return '#FF4E00';
     return '#3B82F6';
   }};
@@ -176,8 +177,9 @@ const MethodLabel = styled.div`
   font-weight: 800;
   color: ${props => {
     if (!props.$active) return '#64748B';
+    if (!props.$active) return '#64748B';
     if (props.$method === 'paypal') return '#0070BA';
-    if (props.$method === 'card') return '#1434CB';
+    if (props.$method === 'card') return '#1A1F71';
     if (props.$method === 'helakuru') return '#FF4E00';
     return '#1D4ED8';
   }};
@@ -372,13 +374,13 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'card'} $method="card" onClick={() => setPaymentMethod('card')}>
                   <MethodIconContainer>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg" alt="Visa" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" />
                   </MethodIconContainer>
                   <MethodLabel $active={paymentMethod === 'card'} $method="card">Visa/Card</MethodLabel>
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'helakuru'} $method="helakuru" onClick={() => setPaymentMethod('helakuru')}>
                   <MethodIconContainer>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Helakuru_logo.png" alt="Helakuru" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Helakuru_logo.png" alt="Helakuru" />
                   </MethodIconContainer>
                   <MethodLabel $active={paymentMethod === 'helakuru'} $method="helakuru">Helakuru</MethodLabel>
                 </MethodCard>
