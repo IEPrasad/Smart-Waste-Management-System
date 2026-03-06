@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertCircle, CheckCircle, XCircle, Wallet, CreditCard, Smartphone } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, XCircle, Wallet, CreditCard, Smartphone, Lock } from 'lucide-react';
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import useEscapeKey from '../../hooks/useEscapeKey';
 import visaLogo from '../../assets/visa_logo.png';
@@ -228,6 +228,28 @@ const Message = styled.p`
   text-align: center;
 `;
 
+const SecureCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #1A1F71;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+`;
+
+const SecureCardBox = styled.div`
+  background: white;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+`;
+
 const Actions = styled.div`
   display: flex;
   gap: 16px;
@@ -434,35 +456,50 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                           {isHelakuruProcessing ? 'Authenticating හෙළPay...' : 'Confirm හෙළPay Transaction'}
                         </Button>
                       ) : (
-                        <PayPalButtons
-                          key={`${paymentMethod}-${request.id}`}
-                          forceReRender={[paymentMethod, request.cash]}
-                          style={{
-                            layout: 'vertical',
-                            height: 48,
-                            color: 'blue',
-                            label: paymentMethod === 'card' ? 'buynow' : 'pay',
-                            tagline: false
-                          }}
-                          fundingSource={paymentMethod === 'card' ? 'card' : undefined}
-                          createOrder={(data, actions) => {
-                            const usdAmount = (request.cash / 300).toFixed(2);
-                            return actions.order.create({
-                              purchase_units: [{
-                                amount: { value: usdAmount, currency_code: 'USD' },
-                                description: `Reward Withdrawal for ${request.citizen} via ${paymentMethod}`
-                              }],
-                            });
-                          }}
-                          onApprove={async (data, actions) => {
-                            const details = await actions.order.capture();
-                            onConfirm(`${paymentMethod.toUpperCase()} ID: ${details.id}`);
-                          }}
-                          onError={(err) => {
-                            console.error('Payment Error:', err);
-                            toast.error('Payment interface failed to load.');
-                          }}
-                        />
+                        <>
+                          {paymentMethod === 'card' && (
+                            <SecureCardHeader>
+                              <Lock size={14} /> Secure Card Checkout
+                            </SecureCardHeader>
+                          )}
+                          <div style={{
+                            background: paymentMethod === 'card' ? 'white' : 'transparent',
+                            borderRadius: 12,
+                            padding: paymentMethod === 'card' ? '16px 16px 4px 16px' : 0,
+                            border: paymentMethod === 'card' ? '1px solid #E2E8F0' : 'none',
+                            boxShadow: paymentMethod === 'card' ? '0 4px 6px -1px rgba(0, 0, 0, 0.05)' : 'none'
+                          }}>
+                            <PayPalButtons
+                              key={`${paymentMethod}-${request.id}`}
+                              forceReRender={[paymentMethod, request.cash]}
+                              style={{
+                                layout: 'vertical',
+                                height: 48,
+                                color: 'blue',
+                                label: paymentMethod === 'card' ? 'buynow' : 'pay',
+                                tagline: false
+                              }}
+                              fundingSource={paymentMethod === 'card' ? 'card' : undefined}
+                              createOrder={(data, actions) => {
+                                const usdAmount = (request.cash / 300).toFixed(2);
+                                return actions.order.create({
+                                  purchase_units: [{
+                                    amount: { value: usdAmount, currency_code: 'USD' },
+                                    description: `Reward Withdrawal for ${request.citizen} via ${paymentMethod}`
+                                  }],
+                                });
+                              }}
+                              onApprove={async (data, actions) => {
+                                const details = await actions.order.capture();
+                                onConfirm(`${paymentMethod.toUpperCase()} ID: ${details.id}`);
+                              }}
+                              onError={(err) => {
+                                console.error('Payment Error:', err);
+                                toast.error('Payment interface failed to load.');
+                              }}
+                            />
+                          </div>
+                        </>
                       )}
                     </motion.div>
                   </AnimatePresence>
