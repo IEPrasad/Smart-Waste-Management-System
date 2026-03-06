@@ -251,6 +251,25 @@ const SecureCardBox = styled.div`
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 `;
 
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+
+  &::before, &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #E2E8F0;
+  }
+`;
+
 const Actions = styled.div`
   display: flex;
   gap: 16px;
@@ -513,6 +532,32 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                                 <PayPalCardFieldsForm />
                                 <SubmitCardButton amount={request.cash} />
                               </PayPalCardFieldsProvider>
+
+                              <Divider>OR</Divider>
+
+                              <PayPalButtons
+                                key={`card-buttons-${request.id}`}
+                                style={{
+                                  layout: 'vertical',
+                                  height: 48,
+                                  color: 'black',
+                                  label: 'pay',
+                                  tagline: false
+                                }}
+                                createOrder={(data, actions) => {
+                                  const usdAmount = (request.cash / 300).toFixed(2);
+                                  return actions.order.create({
+                                    purchase_units: [{
+                                      amount: { value: usdAmount, currency_code: 'USD' },
+                                      description: `Reward Withdrawal for ${request.citizen} via card buttons`
+                                    }],
+                                  });
+                                }}
+                                onApprove={async (data, actions) => {
+                                  const details = await actions.order.capture();
+                                  onConfirm(`CARD BUTTONS ID: ${details.id}`);
+                                }}
+                              />
                             </div>
                           ) : (
                             <PayPalButtons
