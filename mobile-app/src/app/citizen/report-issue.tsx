@@ -8,434 +8,496 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+import { supabase } from '@/lib/supabase';
+import { createWasteIssue, uploadIssuePhoto } from '@/services/wasteIssues';
 
 type PriorityLevel = 'low' | 'medium' | 'high';
 type IssueType = 'missed-pickup' | 'damaged-bin' | 'incorrect-sorting' | 'other';
 
+const ISSUE_TYPES: { value: IssueType; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { value: 'missed-pickup', label: 'Missed Pickup', icon: 'car-outline' },
+  { value: 'damaged-bin', label: 'Damaged Bin', icon: 'trash-outline' },
+  { value: 'incorrect-sorting', label: 'Incorrect Sorting', icon: 'swap-horizontal-outline' },
+  { value: 'other', label: 'Other', icon: 'help-circle-outline' },
+];
+
+const PRIORITY_CONFIG: Record<PriorityLevel, { color: string; bg: string; label: string }> = {
+  low: { color: '#D97706', bg: '#FEF3C7', label: 'Low' },
+  medium: { color: '#EA580C', bg: '#FFF7ED', label: 'Medium' },
+  high: { color: '#DC2626', bg: '#FEE2E2', label: 'High' },
+};
+
 export default function ReportIssueScreen() {
   const router = useRouter();
-  
+
   const [issueType, setIssueType] = useState<IssueType | null>(null);
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<PriorityLevel>('high');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [showIssueTypePicker, setShowIssueTypePicker] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const issueTypes = [
-    { value: 'missed-pickup', label: 'Missed Pickup' },
-    { value: 'damaged-bin', label: 'Damaged Bin' },
-    { value: 'incorrect-sorting', label: 'Incorrect Sorting' },
-    { value: 'other', label: 'Other' },
-  ];
+  // Photo state
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
-  const handlePhotoUpload = () => {
-    Alert.alert('Photo Upload', 'Photo upload feature will be added soon!');
+  const selectedIssue = ISSUE_TYPES.find(t => t.value === issueType);
+
+  // ── Pick image from library ───────────────────────────────────────────────
+  const handlePickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission Required',
+        'Please allow access to your photo library to upload evidence.'
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+      aspect: [4, 3],
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setPhotoUri(result.assets[0].uri);
+    }
   };
 
-  const handleSubmit = () => {
-    // Validation
+  // ── Remove selected photo ─────────────────────────────────────────────────
+  const handleRemovePhoto = () => {
+    Alert.alert('Remove Photo', 'Remove the selected photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => setPhotoUri(null) },
+    ]);
+  };
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
     if (!issueType) {
-      Alert.alert('Error', 'Please select an issue type');
-      return;
+      Alert.alert('Required', 'Please select an issue type.'); return;
     }
-
     if (description.trim().length < 10) {
-      Alert.alert('Error', 'Description must be at least 10 characters');
-      return;
+      Alert.alert('Too Short', 'Description must be at least 10 characters.'); return;
     }
 
-    // Success
-    Alert.alert(
-      'Report Submitted!',
-      'Your report will be reviewed within 24 hours',
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
+    setIsSubmitting(true);
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.id) throw new Error(userError?.message || 'Unable to find your account');
+
+      const userId = userData.user.id;
+      let photoUrl: string | undefined;
+
+      // Upload photo if one was selected
+      if (photoUri) {
+        setIsUploadingPhoto(true);
+        const { url, error: uploadErr } = await uploadIssuePhoto(photoUri, userId);
+        setIsUploadingPhoto(false);
+        if (uploadErr) {
+          Alert.alert('Photo Upload Failed', uploadErr + '\n\nDo you want to submit without the photo?', [
+            { text: 'Cancel', style: 'cancel', onPress: () => setIsSubmitting(false) },
+            {
+              text: 'Submit Without Photo', onPress: async () => {
+                await submitIssue(userId, undefined);
+              }
+            },
+          ]);
+          return;
+        }
+        photoUrl = url ?? undefined;
+      }
+
+      await submitIssue(userId, photoUrl);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setIsSubmitting(false);
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const submitIssue = async (userId: string, photoUrl?: string) => {
+    const { error } = await createWasteIssue(
+      userId, issueType!, description.trim(), priority,
+      { email: email || undefined, mobileNo: phone || undefined, photoUrl }
     );
+    if (error) throw new Error(error);
+
+    Alert.alert('✅ Report Submitted', 'Your report will be reviewed within 24 hours.', [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Issue</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="#7F1D1D" />
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Issue Type */}
-        <View style={styles.section}>
-          <Text style={styles.label}>
-            Issue Type<Text style={styles.required}> * </Text>
-          </Text>
-          <TouchableOpacity 
-            style={styles.dropdown}
-            onPress={() => setShowIssueTypePicker(!showIssueTypePicker)}
+      {/* ── Gradient header ── */}
+      <LinearGradient colors={['#7F1D1D', '#B91C1C']} style={styles.headerGradient}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
+        </TouchableOpacity>
+        <View>
+          <Text style={styles.headerTitle}>Report an Issue</Text>
+          <Text style={styles.headerSub}>We'll respond within 24 hours</Text>
+        </View>
+        <View style={styles.headerWarnIcon}>
+          <Ionicons name="warning-outline" size={22} color="#FECACA" />
+        </View>
+      </LinearGradient>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+
+        {/* ── Issue type ── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="list-outline" size={18} color="#DC2626" />
+            <Text style={styles.cardTitle}>Issue Type <Text style={styles.req}>*</Text></Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.dropdown, pickerOpen && styles.dropdownOpen]}
+            onPress={() => setPickerOpen(p => !p)}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.dropdownText, !issueType && styles.placeholder]}>
-              {issueType 
-                ? issueTypes.find(t => t.value === issueType)?.label 
-                : 'Select issue type'}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color="#000000" />
+            <View style={styles.dropdownLeft}>
+              {selectedIssue
+                ? <><Ionicons name={selectedIssue.icon} size={18} color="#DC2626" style={{ marginRight: 8 }} />
+                  <Text style={styles.dropdownSelected}>{selectedIssue.label}</Text></>
+                : <Text style={styles.dropdownPlaceholder}>Select issue type…</Text>
+              }
+            </View>
+            <Ionicons name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#6B7280" />
           </TouchableOpacity>
 
-          {showIssueTypePicker && (
+          {pickerOpen && (
             <View style={styles.picker}>
-              {issueTypes.map((type) => (
+              {ISSUE_TYPES.map((t, i) => (
                 <TouchableOpacity
-                  key={type.value}
-                  style={styles.pickerItem}
-                  onPress={() => {
-                    setIssueType(type.value as IssueType);
-                    setShowIssueTypePicker(false);
-                  }}
+                  key={t.value}
+                  style={[styles.pickerItem, i < ISSUE_TYPES.length - 1 && styles.pickerItemBorder]}
+                  onPress={() => { setIssueType(t.value); setPickerOpen(false); }}
                 >
-                  <Text style={styles.pickerItemText}>{type.label}</Text>
+                  <View style={styles.pickerItemLeft}>
+                    <View style={[styles.pickerIconWrap, t.value === issueType && { backgroundColor: '#FEE2E2' }]}>
+                      <Ionicons name={t.icon} size={16} color={t.value === issueType ? '#DC2626' : '#6B7280'} />
+                    </View>
+                    <Text style={[styles.pickerItemText, t.value === issueType && { color: '#DC2626', fontWeight: '700' }]}>
+                      {t.label}
+                    </Text>
+                  </View>
+                  {t.value === issueType && <Ionicons name="checkmark" size={16} color="#DC2626" />}
                 </TouchableOpacity>
               ))}
             </View>
           )}
         </View>
 
-        {/* Description */}
-        <View style={styles.section}>
-          <Text style={styles.label}>
-            Description<Text style={styles.required}> *</Text>
-          </Text>
+        {/* ── Description ── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="create-outline" size={18} color="#DC2626" />
+            <Text style={styles.cardTitle}>Description <Text style={styles.req}>*</Text></Text>
+          </View>
           <TextInput
             style={styles.textArea}
-            placeholder="Please describe the issue in detail..."
+            placeholder="Please describe the issue in detail…"
             placeholderTextColor="#9CA3AF"
             multiline
-            numberOfLines={4}
+            numberOfLines={5}
             value={description}
             onChangeText={setDescription}
             textAlignVertical="top"
           />
-          <Text style={styles.helperText}>Minimum 10 characters required</Text>
-        </View>
-
-        {/* Upload Evidence */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Upload Evidence (Optional)</Text>
-          <TouchableOpacity style={styles.uploadBox} onPress={handlePhotoUpload}>
-            <View style={styles.uploadContent}>
-              <View style={styles.cameraIconContainer}>
-                <Ionicons name="camera" size={32} color="#9CA3AF" />
-              </View>
-              <Text style={styles.uploadText}>Tap to upload photo</Text>
-              <Text style={styles.uploadSubtext}>PNG, JPG up to 10MB</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Priority Level */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Priority Level</Text>
-          <View style={styles.priorityRow}>
-            <TouchableOpacity
-              style={[
-                styles.priorityButton,
-                priority === 'low' && styles.priorityButtonActive,
-              ]}
-              onPress={() => setPriority('low')}
-            >
-              <View style={[styles.priorityDot, { backgroundColor: '#F59E0B' }]} />
-              <Text style={[
-                styles.priorityText,
-                priority === 'low' && styles.priorityTextActive
-              ]}>
-                Low
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.priorityButton,
-                priority === 'medium' && styles.priorityButtonActive,
-              ]}
-              onPress={() => setPriority('medium')}
-            >
-              <View style={[styles.priorityDot, { backgroundColor: '#F97316' }]} />
-              <Text style={[
-                styles.priorityText,
-                priority === 'medium' && styles.priorityTextActive
-              ]}>
-                Medium
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.priorityButton,
-                priority === 'high' && styles.priorityButtonActive,
-              ]}
-              onPress={() => setPriority('high')}
-            >
-              <View style={[styles.priorityDot, { backgroundColor: '#EF4444' }]} />
-              <Text style={[
-                styles.priorityText,
-                priority === 'high' && styles.priorityTextActive
-              ]}>
-                High
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.charRow}>
+            <Ionicons name="information-circle-outline" size={13} color="#9CA3AF" />
+            <Text style={[styles.charText, description.length < 10 && description.length > 0 && { color: '#DC2626' }]}>
+              {description.length} chars · minimum 10
+            </Text>
           </View>
         </View>
 
-        {/* Contact Information */}
-        <View style={styles.section}>
-          <Text style={styles.label}>Contact Information</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Phone number (optional)"
-            placeholderTextColor="#9CA3AF"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-          <TextInput
-            style={[styles.input, { marginTop: 10 }]}
-            placeholder="Email address (optional)"
-            placeholderTextColor="#9CA3AF"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+        {/* ── Photo upload ── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="camera-outline" size={18} color="#DC2626" />
+            <Text style={styles.cardTitle}>Evidence <Text style={styles.opt}>(optional)</Text></Text>
+          </View>
+
+          {photoUri ? (
+            /* ── Preview of selected photo ── */
+            <View style={styles.previewWrap}>
+              <Image source={{ uri: photoUri }} style={styles.previewImage} resizeMode="cover" />
+              <View style={styles.previewOverlay}>
+                <TouchableOpacity style={styles.previewRemoveBtn} onPress={handleRemovePhoto} activeOpacity={0.8}>
+                  <Ionicons name="close-circle" size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.previewFooter}>
+                <Ionicons name="checkmark-circle" size={16} color="#059669" />
+                <Text style={styles.previewFooterText}>Photo selected</Text>
+                <TouchableOpacity onPress={handlePickPhoto} activeOpacity={0.7}>
+                  <Text style={styles.previewChangeText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            /* ── Upload tap area ── */
+            <TouchableOpacity
+              style={styles.uploadBox}
+              onPress={handlePickPhoto}
+              activeOpacity={0.8}
+            >
+              <View style={styles.uploadIconCircle}>
+                <Ionicons name="cloud-upload-outline" size={28} color="#DC2626" />
+              </View>
+              <Text style={styles.uploadTitle}>Tap to upload photo</Text>
+              <Text style={styles.uploadSub}>PNG or JPG · from your gallery</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {/* Submit Button */}
+        {/* ── Priority ── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="flag-outline" size={18} color="#DC2626" />
+            <Text style={styles.cardTitle}>Priority Level</Text>
+          </View>
+          <View style={styles.priorityRow}>
+            {(Object.entries(PRIORITY_CONFIG) as [PriorityLevel, typeof PRIORITY_CONFIG[PriorityLevel]][]).map(([key, cfg]) => {
+              const active = priority === key;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.priorityBtn, active && { borderColor: cfg.color, backgroundColor: cfg.bg }]}
+                  onPress={() => setPriority(key)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.priorityDot, { backgroundColor: cfg.color }]} />
+                  <Text style={[styles.priorityText, active && { color: cfg.color, fontWeight: '700' }]}>
+                    {cfg.label}
+                  </Text>
+                  {active && <Ionicons name="checkmark-circle" size={14} color={cfg.color} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Contact info ── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="call-outline" size={18} color="#DC2626" />
+            <Text style={styles.cardTitle}>Contact <Text style={styles.opt}>(optional)</Text></Text>
+          </View>
+
+          <View style={styles.contactField}>
+            <View style={styles.contactIconWrap}>
+              <Ionicons name="phone-portrait-outline" size={16} color="#DC2626" />
+            </View>
+            <TextInput
+              style={styles.contactInput}
+              placeholder="Phone number"
+              placeholderTextColor="#9CA3AF"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+          </View>
+
+          <View style={[styles.contactField, { marginTop: 10 }]}>
+            <View style={styles.contactIconWrap}>
+              <Ionicons name="mail-outline" size={16} color="#DC2626" />
+            </View>
+            <TextInput
+              style={styles.contactInput}
+              placeholder="Email address"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+        </View>
+
+        {/* ── Submit ── */}
         <TouchableOpacity
-          style={styles.submitButton}
+          style={[styles.submitBtn, isSubmitting && { opacity: 0.65 }]}
           onPress={handleSubmit}
-          activeOpacity={0.8}
+          disabled={isSubmitting}
+          activeOpacity={0.85}
         >
-          <Text style={styles.submitButtonText}>Submit Issue Report</Text>
+          <LinearGradient
+            colors={['#DC2626', '#B91C1C']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={styles.submitGradient}
+          >
+            {isSubmitting
+              ? <>
+                <ActivityIndicator color="#fff" />
+                <Text style={styles.submitText}>
+                  {isUploadingPhoto ? 'Uploading photo…' : 'Submitting…'}
+                </Text>
+              </>
+              : <>
+                <Ionicons name="send-outline" size={18} color="#fff" />
+                <Text style={styles.submitText}>Submit Issue Report</Text>
+              </>
+            }
+          </LinearGradient>
         </TouchableOpacity>
 
-        {/* Footer Note */}
+        {/* ── Footer note ── */}
         <View style={styles.footer}>
-          <Ionicons name="information-circle-outline" size={16} color="#6B7280" />
+          <Ionicons name="shield-checkmark-outline" size={15} color="#6B7280" />
           <Text style={styles.footerText}>
-            Your report will be reviewed within 24 hours
+            Reports are reviewed within 24 hours
           </Text>
         </View>
 
-        <View style={{ height: 60 }} />
+        <View style={{ height: 48 }} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  root: { flex: 1, backgroundColor: '#F3F4F6' },
+
+  // Header
+  headerGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight ?? 24) + 8,
+    paddingBottom: 16,
+  },
+  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  headerWarnIcon: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+  headerSub: { fontSize: 11, color: 'rgba(255,255,255,0.75)', marginTop: 1 },
+
+  // Scroll
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 20 },
+
+  // Card
+  card: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  req: { color: '#DC2626' },
+  opt: { fontSize: 12, fontWeight: '400', color: '#9CA3AF' },
+
+  // Dropdown
+  dropdown: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 13, backgroundColor: '#F9FAFB',
+  },
+  dropdownOpen: { borderColor: '#DC2626', backgroundColor: '#FFF5F5' },
+  dropdownLeft: { flexDirection: 'row', alignItems: 'center' },
+  dropdownSelected: { fontSize: 15, color: '#111827', fontWeight: '500' },
+  dropdownPlaceholder: { fontSize: 14, color: '#9CA3AF' },
+
+  // Picker
+  picker: {
+    marginTop: 8, borderWidth: 1, borderColor: '#E5E7EB',
+    borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff',
+  },
+  pickerItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 13 },
+  pickerItemBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  pickerItemLeft: { flexDirection: 'row', alignItems: 'center' },
+  pickerIconWrap: { width: 30, height: 30, borderRadius: 8, backgroundColor: '#F3F4F6', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  pickerItemText: { fontSize: 14, color: '#374151' },
+
+  // Text area
+  textArea: {
+    borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12,
+    padding: 12, fontSize: 14, color: '#111827',
+    minHeight: 110, backgroundColor: '#F9FAFB',
+  },
+  charRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+  charText: { fontSize: 11, color: '#9CA3AF' },
+
+  // Upload box (empty state)
+  uploadBox: {
+    borderWidth: 2, borderStyle: 'dashed', borderColor: '#FECACA',
+    borderRadius: 12, padding: 28, alignItems: 'center', backgroundColor: '#FFF5F5',
+  },
+  uploadIconCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#FEE2E2', justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  uploadTitle: { fontSize: 14, fontWeight: '600', color: '#374151', marginBottom: 4 },
+  uploadSub: { fontSize: 12, color: '#9CA3AF' },
+
+  // Photo preview
+  previewWrap: { borderRadius: 12, overflow: 'hidden', borderWidth: 1.5, borderColor: '#E5E7EB' },
+  previewImage: { width: '100%', height: 180 },
+  previewOverlay: {
+    position: 'absolute', top: 8, right: 8,
+  },
+  previewRemoveBtn: {
+    backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16,
+  },
+  previewFooter: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 10,
+    backgroundColor: '#F9FAFB', borderTopWidth: 1, borderTopColor: '#E5E7EB',
+  },
+  previewFooterText: { flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' },
+  previewChangeText: { fontSize: 13, color: '#DC2626', fontWeight: '600' },
+
+  // Priority
+  priorityRow: { flexDirection: 'row', gap: 10 },
+  priorityBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 12, borderRadius: 12,
+    borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
+  },
+  priorityDot: { width: 8, height: 8, borderRadius: 4 },
+  priorityText: { fontSize: 13, fontWeight: '500', color: '#6B7280' },
+
+  // Contact
+  contactField: {
+    flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: 12, overflow: 'hidden',
     backgroundColor: '#F9FAFB',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+  contactIconWrap: {
+    width: 44, height: 44, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#FEE2E2',
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  headerSpacer: {
-    width: 36,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  section: {
-    paddingHorizontal: 18,
-    marginTop: 16,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 8,
-  },
-  required: {
-    color: '#EF4444',
-  },
-  dropdown: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dropdownText: {
-    fontSize: 14,
-    color: '#000000',
-  },
-  placeholder: {
-    color: '#9CA3AF',
-  },
-  picker: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    marginTop: 8,
-    overflow: 'hidden',
-  },
-  pickerItem: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  pickerItemText: {
-    fontSize: 14,
-    color: '#000000',
-  },
-  textArea: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-    fontSize: 14,
-    color: '#000000',
-    minHeight: 90,
-  },
-  helperText: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 6,
-  },
-  uploadBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: '#D1D5DB',
-    padding: 24,
-    alignItems: 'center',
-  },
-  uploadContent: {
-    alignItems: 'center',
-  },
-  cameraIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  uploadText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 4,
-  },
-  uploadSubtext: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  priorityButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    paddingVertical: 14,
-    alignItems: 'center',
-    gap: 6,
-  },
-  priorityButtonActive: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
-  },
-  priorityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  priorityText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  priorityTextActive: {
-    color: '#EF4444',
-  },
-  input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#000000',
-  },
-  submitButton: {
-    backgroundColor: '#EF4444',
-    borderRadius: 10,
-    paddingVertical: 14,
-    marginHorizontal: 18,
-    marginTop: 20,
-    shadowColor: '#EF4444',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-    gap: 6,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
+  contactInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, color: '#111827', height: 44 },
+
+  // Submit
+  submitBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 14 },
+  submitGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15 },
+  submitText: { fontSize: 16, fontWeight: '700', color: '#fff', letterSpacing: 0.2 },
+
+  // Footer
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8 },
+  footerText: { fontSize: 12, color: '#6B7280' },
 });
