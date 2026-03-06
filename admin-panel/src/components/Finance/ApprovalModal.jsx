@@ -133,29 +133,55 @@ const MethodCard = styled.div`
   flex: 1;
   padding: 12px;
   border-radius: 12px;
-  border: 2px solid ${props => props.$active ? '#3B82F6' : '#E2E8F0'};
-  background: ${props => props.$active ? '#EFF6FF' : 'white'};
+  border: 2px solid ${props => {
+    if (!props.$active) return '#E2E8F0';
+    if (props.$method === 'paypal') return '#0070BA';
+    if (props.$method === 'card') return '#1434CB';
+    if (props.$method === 'helakuru') return '#FF4E00';
+    return '#3B82F6';
+  }};
+  background: ${props => props.$active ? 'white' : 'white'};
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  transition: all 0.2s;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: ${props => props.$active ? `0 10px 15px -3px ${props.$method === 'paypal' ? 'rgba(0, 112, 186, 0.2)' : props.$method === 'card' ? 'rgba(20, 52, 203, 0.2)' : 'rgba(255, 78, 0, 0.2)'}` : 'none'};
   
   &:hover {
-    border-color: #3B82F6;
+    border-color: ${props => props.$method === 'paypal' ? '#0070BA' : props.$method === 'card' ? '#1434CB' : '#FF4E00'};
+    transform: translateY(-2px);
   }
 `;
 
-const MethodIcon = styled.div`
-  font-size: 20px;
+const MethodIconContainer = styled.div`
+  width: 44px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
 `;
 
 const MethodLabel = styled.div`
-  font-size: 11px;
-  font-weight: 700;
-  color: ${props => props.$active ? '#1D4ED8' : '#64748B'};
+  font-size: 10px;
+  font-weight: 800;
+  color: ${props => {
+    if (!props.$active) return '#64748B';
+    if (props.$method === 'paypal') return '#0070BA';
+    if (props.$method === 'card') return '#1434CB';
+    if (props.$method === 'helakuru') return '#FF4E00';
+    return '#1D4ED8';
+  }};
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 `;
 
 const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
@@ -228,17 +254,23 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
 
             {isApprove && (
               <MethodSelector>
-                <MethodCard $active={paymentMethod === 'paypal'} onClick={() => setPaymentMethod('paypal')}>
-                  <MethodIcon><Wallet size={20} color={paymentMethod === 'paypal' ? '#3B82F6' : '#64748B'} /></MethodIcon>
-                  <MethodLabel $active={paymentMethod === 'paypal'}>PayPal</MethodLabel>
+                <MethodCard $active={paymentMethod === 'paypal'} $method="paypal" onClick={() => setPaymentMethod('paypal')}>
+                  <MethodIconContainer>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" />
+                  </MethodIconContainer>
+                  <MethodLabel $active={paymentMethod === 'paypal'} $method="paypal">PayPal</MethodLabel>
                 </MethodCard>
-                <MethodCard $active={paymentMethod === 'card'} onClick={() => setPaymentMethod('card')}>
-                  <MethodIcon><CreditCard size={20} color={paymentMethod === 'card' ? '#3B82F6' : '#64748B'} /></MethodIcon>
-                  <MethodLabel $active={paymentMethod === 'card'}>Visa/Card</MethodLabel>
+                <MethodCard $active={paymentMethod === 'card'} $method="card" onClick={() => setPaymentMethod('card')}>
+                  <MethodIconContainer>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" />
+                  </MethodIconContainer>
+                  <MethodLabel $active={paymentMethod === 'card'} $method="card">Visa/Card</MethodLabel>
                 </MethodCard>
-                <MethodCard $active={paymentMethod === 'helakuru'} onClick={() => setPaymentMethod('helakuru')}>
-                  <MethodIcon><Smartphone size={20} color={paymentMethod === 'helakuru' ? '#3B82F6' : '#64748B'} /></MethodIcon>
-                  <MethodLabel $active={paymentMethod === 'helakuru'}>Helakuru</MethodLabel>
+                <MethodCard $active={paymentMethod === 'helakuru'} $method="helakuru" onClick={() => setPaymentMethod('helakuru')}>
+                  <MethodIconContainer>
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Helakuru_new_logo.png" alt="Helakuru" />
+                  </MethodIconContainer>
+                  <MethodLabel $active={paymentMethod === 'helakuru'} $method="helakuru">Helakuru</MethodLabel>
                 </MethodCard>
               </MethodSelector>
             )}
