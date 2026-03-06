@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { PayPalButtons } from "@paypal/react-paypal-js";
 
 const Overlay = styled(motion.div)`
   position: fixed;
@@ -123,81 +124,110 @@ const Button = styled.button`
 `;
 
 const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
-    if (!isOpen || !request) return null;
+  if (!isOpen || !request) return null;
 
-    const isApprove = actionType === 'approve';
-    const config = isApprove ? {
-        bg: '#F0FDF4',
-        border: '#BBF7D0',
-        color: '#166534',
-        icon: CheckCircle,
-        title: 'Approve Reward Request',
-        message: 'This will transfer the cash amount to the citizen\'s bank account.',
-        buttonBg: '#10B981',
-        hoverBg: '#059669'
-    } : {
-        bg: '#FEF2F2',
-        border: '#FECACA',
-        color: '#991B1B',
-        icon: XCircle,
-        title: 'Reject Reward Request',
-        message: 'The points will remain in the citizen\'s account for future claims.',
-        buttonBg: '#EF4444',
-        hoverBg: '#DC2626'
-    };
+  const isApprove = actionType === 'approve';
+  const config = isApprove ? {
+    bg: '#F0FDF4',
+    border: '#BBF7D0',
+    color: '#166534',
+    icon: CheckCircle,
+    title: 'Approve Reward Request',
+    message: 'This will transfer the cash amount to the citizen\'s bank account.',
+    buttonBg: '#10B981',
+    hoverBg: '#059669'
+  } : {
+    bg: '#FEF2F2',
+    border: '#FECACA',
+    color: '#991B1B',
+    icon: XCircle,
+    title: 'Reject Reward Request',
+    message: 'The points will remain in the citizen\'s account for future claims.',
+    buttonBg: '#EF4444',
+    hoverBg: '#DC2626'
+  };
 
-    const Icon = config.icon;
+  const Icon = config.icon;
 
-    return (
-        <AnimatePresence>
-            <Overlay
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-            >
-                <Content
-                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <Header $bg={config.bg} $border={config.border}>
-                        <Title $color={config.color}>
-                            <Icon size={20} /> {config.title}
-                        </Title>
-                        <CloseButton $border={config.border} $color={config.color} $hoverBg={config.buttonBg} onClick={onClose}>
-                            <X size={16} />
-                        </CloseButton>
-                    </Header>
+  return (
+    <AnimatePresence>
+      <Overlay
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <Content
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <Header $bg={config.bg} $border={config.border}>
+            <Title $color={config.color}>
+              <Icon size={20} /> {config.title}
+            </Title>
+            <CloseButton $border={config.border} $color={config.color} $hoverBg={config.buttonBg} onClick={onClose}>
+              <X size={16} />
+            </CloseButton>
+          </Header>
 
-                    <Body>
-                        <InfoRow>
-                            <Label>Citizen</Label>
-                            <Value>{request.citizen}</Value>
-                        </InfoRow>
-                        <InfoRow>
-                            <Label>Points</Label>
-                            <Value>{request.points.toLocaleString()}</Value>
-                        </InfoRow>
-                        <InfoRow>
-                            <Label>Cash Amount</Label>
-                            <Value>LKR {request.cash.toLocaleString()}</Value>
-                        </InfoRow>
+          <Body>
+            <InfoRow>
+              <Label>Citizen</Label>
+              <Value>{request.citizen}</Value>
+            </InfoRow>
+            <InfoRow>
+              <Label>Points</Label>
+              <Value>{request.points.toLocaleString()}</Value>
+            </InfoRow>
+            <InfoRow>
+              <Label>Cash Amount</Label>
+              <Value>LKR {request.cash.toLocaleString()}</Value>
+            </InfoRow>
 
-                        <Message>{config.message}</Message>
+            <Message>{config.message}</Message>
 
-                        <Actions>
-                            <Button onClick={onClose}>Cancel</Button>
-                            <Button $primary $bg={config.buttonBg} onClick={onConfirm}>
-                                Confirm {isApprove ? 'Approval' : 'Rejection'}
-                            </Button>
-                        </Actions>
-                    </Body>
-                </Content>
-            </Overlay>
-        </AnimatePresence>
-    );
+            <Actions>
+              <Button onClick={onClose}>Cancel</Button>
+              {isApprove ? (
+                <div style={{ flex: 1.5 }}>
+                  <PayPalButtons
+                    style={{ layout: 'horizontal', height: 44, color: 'blue', label: 'pay' }}
+                    createOrder={(data, actions) => {
+                      // Convert LKR to USD (1 USD = 300 LKR approximately)
+                      const usdAmount = (request.cash / 300).toFixed(2);
+                      return actions.order.create({
+                        purchase_units: [{
+                          amount: {
+                            value: usdAmount,
+                            currency_code: 'USD'
+                          },
+                          description: `Reward Withdrawal for ${request.citizen}`
+                        }],
+                      });
+                    }}
+                    onApprove={async (data, actions) => {
+                      const details = await actions.order.capture();
+                      console.log('Payment Successful:', details);
+                      onConfirm(`PayPal Transaction ID: ${details.id}`);
+                    }}
+                    onError={(err) => {
+                      console.error('PayPal Error:', err);
+                    }}
+                  />
+                </div>
+              ) : (
+                <Button $primary $bg={config.buttonBg} onClick={onConfirm}>
+                  Confirm Rejection
+                </Button>
+              )}
+            </Actions>
+          </Body>
+        </Content>
+      </Overlay>
+    </AnimatePresence>
+  );
 };
 
 export default ApprovalModal;

@@ -6,6 +6,7 @@ import ExpenseBreakdownChart from '../../components/Finance/ExpenseBreakdownChar
 import RewardRequestsTable from '../../components/Finance/RewardRequestsTable';
 import { Toaster } from 'react-hot-toast';
 import { supabase } from '../../lib/supabaseClient';
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -139,26 +140,34 @@ const Finance = () => {
     }
   };
 
+  const initialOptions = {
+    "client-id": "test", // Replace with your real PayPal Client ID later
+    currency: "USD",
+    intent: "capture",
+  };
+
   if (loading) return <PageContainer>Loading metrics...</PageContainer>;
 
   return (
-    <PageContainer>
-      <Toaster position="top-right" />
+    <PayPalScriptProvider options={initialOptions}>
+      <PageContainer>
+        <Toaster position="top-right" />
 
-      <Header>
-        <Title>Finance & Rewards</Title>
-        <Subtitle>Manage financial overview and citizen reward approvals</Subtitle>
-      </Header>
+        <Header>
+          <Title>Finance & Rewards</Title>
+          <Subtitle>Manage financial overview and citizen reward approvals</Subtitle>
+        </Header>
 
-      <FinancialKPICards stats={stats} />
+        <FinancialKPICards stats={stats} />
 
-      <ChartsGrid>
-        <WasteAnalyticsChart compost={stats.compost} recycle={stats.recycle} />
-        <ExpenseBreakdownChart data={monthlyData} totalDriverCosts={stats.totalExpenses - (stats.totalWaste * 1000 * 4)} totalVehicleCosts={stats.totalWaste * 1000 * 4} />
-      </ChartsGrid>
+        <ChartsGrid>
+          <WasteAnalyticsChart compost={stats.compost} recycle={stats.recycle} />
+          <ExpenseBreakdownChart data={monthlyData} totalDriverCosts={stats.totalExpenses - (stats.totalWaste * 1000 * 4)} totalVehicleCosts={stats.totalWaste * 1000 * 4} />
+        </ChartsGrid>
 
-      <RewardRequestsTable />
-    </PageContainer>
+        <RewardRequestsTable />
+      </PageContainer>
+    </PayPalScriptProvider>
   );
 };
 

@@ -200,7 +200,7 @@ const RewardRequestsTable = () => {
     setModalOpen(true);
   };
 
-  const confirmAction = async () => {
+  const confirmAction = async (notes = '') => {
     try {
       const newStatus = actionType === 'approve' ? 'approved' : 'rejected';
 
@@ -208,7 +208,8 @@ const RewardRequestsTable = () => {
         .from('withdrawal_requests')
         .update({
           status: newStatus,
-          processed_at: new Date().toISOString()
+          processed_at: new Date().toISOString(),
+          admin_notes: notes
         })
         .eq('id', selectedRequest.id);
 
