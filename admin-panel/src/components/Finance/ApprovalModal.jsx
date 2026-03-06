@@ -138,10 +138,9 @@ const MethodCard = styled.div`
   border-radius: 12px;
   border: 2px solid ${props => {
     if (!props.$active) return '#E2E8F0';
-    if (!props.$active) return '#E2E8F0';
     if (props.$method === 'paypal') return '#0070BA';
     if (props.$method === 'card') return '#1A1F71';
-    if (props.$method === 'helakuru') return '#FF4E00';
+    if (props.$method === 'helakuru') return '#0047AB';
     return '#3B82F6';
   }};
   background: ${props => props.$active ? 'white' : 'white'};
@@ -179,10 +178,9 @@ const MethodLabel = styled.div`
   font-weight: 800;
   color: ${props => {
     if (!props.$active) return '#64748B';
-    if (!props.$active) return '#64748B';
     if (props.$method === 'paypal') return '#0070BA';
     if (props.$method === 'card') return '#1A1F71';
-    if (props.$method === 'helakuru') return '#FF4E00';
+    if (props.$method === 'helakuru') return '#0047AB';
     return '#1D4ED8';
   }};
   text-transform: uppercase;
@@ -404,7 +402,7 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                       {paymentMethod === 'helakuru' ? (
                         <Button
                           $primary
-                          $bg="#FF4E00"
+                          $bg="#0047AB"
                           style={{ width: '100%', height: 44, borderRadius: 10 }}
                           disabled={isHelakuruProcessing}
                           onClick={async () => {
