@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
@@ -123,7 +123,45 @@ const Button = styled.button`
   `}
 `;
 
+const MethodSelector = styled.div`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+`;
+
+const MethodCard = styled.div`
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid ${props => props.$active ? '#3B82F6' : '#E2E8F0'};
+  background: ${props => props.$active ? '#EFF6FF' : 'white'};
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: #3B82F6;
+  }
+`;
+
+const MethodIcon = styled.div`
+  font-size: 20px;
+`;
+
+const MethodLabel = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: ${props => props.$active ? '#1D4ED8' : '#64748B'};
+  text-transform: uppercase;
+`;
+
 const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
+  const [paymentMethod, setPaymentMethod] = useState('paypal');
+  const [isHelakuruProcessing, setIsHelakuruProcessing] = useState(false);
+
   if (!isOpen || !request) return null;
 
   const isApprove = actionType === 'approve';
@@ -188,34 +226,75 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
 
             <Message>{config.message}</Message>
 
+            {isApprove && (
+              <MethodSelector>
+                <MethodCard $active={paymentMethod === 'paypal'} onClick={() => setPaymentMethod('paypal')}>
+                  <MethodIcon>🅿️</MethodIcon>
+                  <MethodLabel $active={paymentMethod === 'paypal'}>PayPal</MethodLabel>
+                </MethodCard>
+                <MethodCard $active={paymentMethod === 'card'} onClick={() => setPaymentMethod('card')}>
+                  <MethodIcon>💳</MethodIcon>
+                  <MethodLabel $active={paymentMethod === 'card'}>Visa/Card</MethodLabel>
+                </MethodCard>
+                <MethodCard $active={paymentMethod === 'helakuru'} onClick={() => setPaymentMethod('helakuru')}>
+                  <MethodIcon>📱</MethodIcon>
+                  <MethodLabel $active={paymentMethod === 'helakuru'}>Helakuru</MethodLabel>
+                </MethodCard>
+              </MethodSelector>
+            )}
+
             <Actions>
               <Button onClick={onClose}>Cancel</Button>
               {isApprove ? (
                 <div style={{ flex: 1.5 }}>
-                  <PayPalButtons
-                    style={{ layout: 'horizontal', height: 44, color: 'blue', label: 'pay' }}
-                    createOrder={(data, actions) => {
-                      // Convert LKR to USD (1 USD = 300 LKR approximately)
-                      const usdAmount = (request.cash / 300).toFixed(2);
-                      return actions.order.create({
-                        purchase_units: [{
-                          amount: {
-                            value: usdAmount,
-                            currency_code: 'USD'
-                          },
-                          description: `Reward Withdrawal for ${request.citizen}`
-                        }],
-                      });
-                    }}
-                    onApprove={async (data, actions) => {
-                      const details = await actions.order.capture();
-                      console.log('Payment Successful:', details);
-                      onConfirm(`PayPal Transaction ID: ${details.id}`);
-                    }}
-                    onError={(err) => {
-                      console.error('PayPal Error:', err);
-                    }}
-                  />
+                  {paymentMethod === 'helakuru' ? (
+                    <Button
+                      $primary
+                      $bg="#FF4E00"
+                      style={{ width: '100%', height: 44, borderRadius: 10 }}
+                      disabled={isHelakuruProcessing}
+                      onClick={async () => {
+                        setIsHelakuruProcessing(true);
+                        // Simulating Helakuru Pay Payout Flow
+                        setTimeout(() => {
+                          onConfirm(`Helakuru Pay Transaction: HLK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
+                          setIsHelakuruProcessing(false);
+                        }, 2000);
+                      }}
+                    >
+                      {isHelakuruProcessing ? 'Processing Helakuru...' : 'Pay with Helakuru'}
+                    </Button>
+                  ) : (
+                    <PayPalButtons
+                      style={{
+                        layout: 'horizontal',
+                        height: 44,
+                        color: 'blue',
+                        label: paymentMethod === 'card' ? 'buynow' : 'pay',
+                        tagline: false
+                      }}
+                      fundingSource={paymentMethod === 'card' ? 'card' : undefined}
+                      createOrder={(data, actions) => {
+                        const usdAmount = (request.cash / 300).toFixed(2);
+                        return actions.order.create({
+                          purchase_units: [{
+                            amount: {
+                              value: usdAmount,
+                              currency_code: 'USD'
+                            },
+                            description: `Reward Withdrawal for ${request.citizen} via ${paymentMethod}`
+                          }],
+                        });
+                      }}
+                      onApprove={async (data, actions) => {
+                        const details = await actions.order.capture();
+                        onConfirm(`${paymentMethod.toUpperCase()} Transaction ID: ${details.id}`);
+                      }}
+                      onError={(err) => {
+                        console.error('Payment Error:', err);
+                      }}
+                    />
+                  )}
                 </div>
               ) : (
                 <Button $primary $bg={config.buttonBg} onClick={onConfirm}>
