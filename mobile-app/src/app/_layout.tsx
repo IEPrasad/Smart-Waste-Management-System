@@ -29,15 +29,19 @@ export default function RootLayout() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="auth/register-step1"
+          name="auth/register"
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="auth/register-step2"
+          name="auth/forgot-password"
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="auth/register-step3"
+          name="auth/privacy"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="auth/terms"
           options={{ headerShown: false }}
         />
         <Stack.Screen
