@@ -127,7 +127,7 @@ const CloseButton = styled.button`
 `;
 
 const ModalBody = styled.div`
-    padding: 0;
+    padding: 24px 0 0 0;
     overflow-y: auto;
     flex: 1;
     background: #FFFFFF;
@@ -144,8 +144,37 @@ const ModalBody = styled.div`
     }
 `;
 
+const TabContainer = styled.div`
+    display: flex;
+    gap: 16px;
+    padding: 0 32px;
+    border-bottom: 1px solid #F1F5F9;
+    margin-bottom: 24px;
+`;
+
+const TabContent = styled.button`
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid ${props => props.$active ? props.$color : 'transparent'};
+    color: ${props => props.$active ? props.$color : theme.colors.text.secondary};
+    font-weight: ${props => props.$active ? '700' : '600'};
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    &:hover {
+        color: ${props => props.$color};
+        background: ${props => props.$hoverBg};
+        border-radius: 8px 8px 0 0;
+    }
+`;
+
 const PickupList = styled.div`
-    padding: 24px 32px;
+    padding: 0 32px 24px 32px;
 `;
 
 const PickupCard = styled(motion.div)`
@@ -222,6 +251,7 @@ const DistanceText = styled.div`
 const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }) => {
     const [pickups, setPickups] = useState(initialPickups);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('All');
 
     useEscapeKey(onClose, isOpen);
 
@@ -297,6 +327,18 @@ const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }
         }
     };
 
+    const tabs = [
+        { id: 'All', label: 'All Pickups', color: theme.colors.primary.main, hoverBg: theme.colors.primary.light },
+        { id: 'pending', label: 'Pending', color: theme.colors.warning.main, hoverBg: theme.colors.warning.light },
+        { id: 'collected', label: 'Completed', color: theme.colors.success.main, hoverBg: theme.colors.success.light },
+        { id: 'missed', label: 'Missed', color: theme.colors.danger.main, hoverBg: theme.colors.danger.light },
+    ];
+
+    const filteredPickups = pickups.filter(p => {
+        if (activeTab === 'All') return true;
+        return p.status === activeTab;
+    });
+
     if (!isOpen) return null;
 
     return (
@@ -339,6 +381,26 @@ const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }
                     </ModalHeader>
 
                     <ModalBody>
+                        <TabContainer>
+                            {tabs.map(tab => {
+                                const count = tab.id === 'All' ? pickups.length : pickups.filter(p => p.status === tab.id).length;
+                                return (
+                                    <TabContent
+                                        key={tab.id}
+                                        $active={activeTab === tab.id}
+                                        $color={tab.color}
+                                        $hoverBg={tab.hoverBg}
+                                        onClick={() => setActiveTab(tab.id)}
+                                    >
+                                        {tab.label}
+                                        <Badge $bg={activeTab === tab.id ? tab.color : '#F1F5F9'} $color={activeTab === tab.id ? theme.colors.white : theme.colors.text.secondary}>
+                                            {count}
+                                        </Badge>
+                                    </TabContent>
+                                );
+                            })}
+                        </TabContainer>
+
                         <PickupList>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700' }}>Pickup Queue <span style={{ color: theme.colors.text.muted, fontSize: '14px', fontWeight: 'normal' }}>(Sorted by Distance)</span></h3>
@@ -352,13 +414,13 @@ const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }
                                     <Clock size={40} className="animate-spin" style={{ color: theme.colors.text.muted }} />
                                     <p style={{ color: theme.colors.text.secondary, marginTop: '16px' }}>Loading pickup data...</p>
                                 </div>
-                            ) : pickups.length === 0 ? (
+                            ) : filteredPickups.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '100px 0', background: '#F8FAFC', borderRadius: '16px', border: '1px dashed #E2E8F0' }}>
                                     <AlertCircle size={40} style={{ color: theme.colors.text.muted, marginBottom: '16px' }} />
-                                    <p style={{ color: theme.colors.text.secondary }}>No active pickups found for this driver.</p>
+                                    <p style={{ color: theme.colors.text.secondary }}>No pickups found for this category.</p>
                                 </div>
                             ) : (
-                                pickups.map((pickup, idx) => (
+                                filteredPickups.map((pickup, idx) => (
                                     <PickupCard
                                         key={pickup.id}
                                         initial={{ opacity: 0, x: -20 }}
