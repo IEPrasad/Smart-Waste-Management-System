@@ -77,8 +77,6 @@ const Schedule = () => {
                 .eq('status', 'pending')
                 .order('date', { ascending: false });
 
-            if (reqData) setRequests(reqData);
-
             // Fetch live pending pickups
             const { data: pickupsData } = await supabase
                 .from('pickups')
@@ -86,6 +84,36 @@ const Schedule = () => {
                 .eq('status', 'pending');
 
             if (pickupsData) setPickups(pickupsData);
+
+            if (reqData) {
+                // 1. Identify users who already have active pending pickups
+                const usersWithPendingPickups = new Set(pickupsData?.map(p => p.citizen_id) || []);
+
+                // 2. Filter and collapse requests: 
+                //    - Exclude users with existing pending pickups
+                //    - Aggregate multiple requests from the same user into one entry
+                //    - Collect all unique waste types for that user
+                const userGroupMap = reqData.reduce((acc, req) => {
+                    // Skip if user already has a pending pickup (to avoid duplicate driver assignment)
+                    if (usersWithPendingPickups.has(req.user_id)) return acc;
+
+                    if (!acc[req.user_id]) {
+                        acc[req.user_id] = {
+                            ...req,
+                            waste_type: [req.type] // Initialize as array of types
+                        };
+                    } else {
+                        // If user already seen, just add this request's type if it's new
+                        if (!acc[req.user_id].waste_type.includes(req.type)) {
+                            acc[req.user_id].waste_type.push(req.type);
+                        }
+                    }
+                    return acc;
+                }, {});
+
+                const finalRequests = Object.values(userGroupMap);
+                setRequests(finalRequests);
+            }
 
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -136,20 +164,47 @@ const Schedule = () => {
     const handleAssignDriver = async (driverId, requestIds) => {
         setIsAssigning(true);
         try {
-            // First map the citizen references for inserting to the pickups table
-            const { data: targetRequests } = await supabase
+            // Get all user_ids associated with the selected requests
+            const { data: baseRequests } = await supabase
                 .from('waste_requests')
-                .select('id, user_id')
+                .select('user_id')
                 .in('id', requestIds);
 
-            if (targetRequests && targetRequests.length > 0) {
-                // Determine citizen IDs
-                const citizenIds = [...new Set(targetRequests.map(req => req.user_id))];
+            if (!baseRequests || baseRequests.length === 0) return;
 
+            const targetUserIds = [...new Set(baseRequests.map(r => r.user_id))];
+
+            // 1. Safeguard: Check if any of these users ALREADY have a pending pickup
+            // (Secondary check in case UI was stale)
+            const { data: existingPickups } = await supabase
+                .from('pickups')
+                .select('citizen_id')
+                .eq('status', 'pending')
+                .in('citizen_id', targetUserIds);
+
+            if (existingPickups && existingPickups.length > 0) {
+                const conflictingIds = existingPickups.map(p => p.citizen_id);
+                toast.error('Some users already have a pending pickup assigned.');
+                fetchData();
+                setIsAssigning(false);
+                return;
+            }
+
+            // 2. Find ALL pending requests for these users (to schedule all of them together)
+            const { data: allUserPendingRequests } = await supabase
+                .from('waste_requests')
+                .select('id, user_id')
+                .eq('status', 'pending')
+                .in('user_id', targetUserIds);
+
+            if (allUserPendingRequests && allUserPendingRequests.length > 0) {
+                const allRequestIdsToSchedule = allUserPendingRequests.map(r => r.id);
+
+                // Get citizen coordinates
                 const { data: citizensList } = await supabase
                     .from('citizens')
                     .select('id, latitude, longitude')
-                    .in('id', citizenIds);
+                    .in('id', targetUserIds);
 
                 if (citizensList && citizensList.length > 0) {
                     const pickupsToInsert = citizensList.map(citizen => ({
@@ -160,23 +215,22 @@ const Schedule = () => {
                         lng: citizen.longitude
                     }));
 
+                    // Insert pickups
                     const { error: insertError } = await supabase
                         .from('pickups')
                         .insert(pickupsToInsert);
 
                     if (insertError) throw insertError;
+
+                    // Update ALL associated requests to 'scheduled'
+                    const { error: updateError } = await supabase
+                        .from('waste_requests')
+                        .update({ status: 'scheduled' })
+                        .in('id', allRequestIdsToSchedule);
+
+                    if (updateError) throw updateError;
                 }
             }
-
-            // Update all selected requests
-            const { error: updateError } = await supabase
-                .from('waste_requests')
-                .update({
-                    status: 'scheduled'
-                })
-                .in('id', requestIds);
-
-            if (updateError) throw updateError;
 
             toast.success(`Successfully assigned ${requestIds.length} request(s)!`);
 
