@@ -74,63 +74,63 @@ const StatValue = styled.div`
   color: #0F172A;
 `;
 
-const WasteAnalyticsChart = () => {
-    const pieData = [
-        { name: 'Compost', value: 68.2, color: '#22C55E' },
-        { name: 'Recycle', value: 56.3, color: '#3B82F6' }
-    ];
+const WasteAnalyticsChart = ({ compost, recycle }) => {
+  const pieData = [
+    { name: 'Compost', value: Number(compost.weight), color: '#22C55E' },
+    { name: 'Recycle', value: Number(recycle.weight), color: '#3B82F6' }
+  ];
 
-    return (
-        <Card>
-            <Header>
-                <Title>Waste Analytics</Title>
-                <Subtitle>Distribution and trends</Subtitle>
-            </Header>
+  return (
+    <Card>
+      <Header>
+        <Title>Waste Analytics</Title>
+        <Subtitle>Distribution and trends</Subtitle>
+      </Header>
 
-            <ChartContainer>
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                        <Pie
-                            data={pieData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={90}
-                            paddingAngle={5}
-                            dataKey="value"
-                        >
-                            {pieData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => `${value} tonnes`} />
-                        <Legend />
-                    </PieChart>
-                </ResponsiveContainer>
-            </ChartContainer>
+      <ChartContainer>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={5}
+              dataKey="value"
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => `${value} tonnes`} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </ChartContainer>
 
-            <Stats>
-                <StatItem>
-                    <StatIcon $bg="#F0FDF4" $color="#22C55E">
-                        <Leaf size={20} />
-                    </StatIcon>
-                    <StatInfo>
-                        <StatLabel>Compost</StatLabel>
-                        <StatValue>68.2t</StatValue>
-                    </StatInfo>
-                </StatItem>
-                <StatItem>
-                    <StatIcon $bg="#EFF6FF" $color="#3B82F6">
-                        <Recycle size={20} />
-                    </StatIcon>
-                    <StatInfo>
-                        <StatLabel>Recycle</StatLabel>
-                        <StatValue>56.3t</StatValue>
-                    </StatInfo>
-                </StatItem>
-            </Stats>
-        </Card>
-    );
+      <Stats>
+        <StatItem>
+          <StatIcon $bg="#F0FDF4" $color="#22C55E">
+            <Leaf size={20} />
+          </StatIcon>
+          <StatInfo>
+            <StatLabel>Compost</StatLabel>
+            <StatValue>{(compost.weight / 1000).toFixed(1)}t</StatValue>
+          </StatInfo>
+        </StatItem>
+        <StatItem>
+          <StatIcon $bg="#EFF6FF" $color="#3B82F6">
+            <Recycle size={20} />
+          </StatIcon>
+          <StatInfo>
+            <StatLabel>Recycle</StatLabel>
+            <StatValue>{(recycle.weight / 1000).toFixed(1)}t</StatValue>
+          </StatInfo>
+        </StatItem>
+      </Stats>
+    </Card>
+  );
 };
 
 export default WasteAnalyticsChart;

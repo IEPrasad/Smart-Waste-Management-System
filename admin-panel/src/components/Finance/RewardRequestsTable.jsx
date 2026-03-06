@@ -181,7 +181,11 @@ const RewardRequestsTable = () => {
           points: Number(req.amount),
           cash: Number(req.amount),
           requestDate: requestDate.toISOString().split('T')[0],
-          daysActive: daysActive
+          daysActive: daysActive,
+          bankName: req.bank_name,
+          accountNumber: req.account_number,
+          accountHolder: req.account_holder_name,
+          branch: req.branch
         };
       });
 
@@ -200,7 +204,7 @@ const RewardRequestsTable = () => {
     setModalOpen(true);
   };
 
-  const confirmAction = async () => {
+  const confirmAction = async (notes = '') => {
     try {
       const newStatus = actionType === 'approve' ? 'approved' : 'rejected';
 
@@ -208,7 +212,8 @@ const RewardRequestsTable = () => {
         .from('withdrawal_requests')
         .update({
           status: newStatus,
-          processed_at: new Date().toISOString()
+          processed_at: new Date().toISOString(),
+          admin_notes: notes
         })
         .eq('id', selectedRequest.id);
 
