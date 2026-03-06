@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { X, AlertCircle, CheckCircle, XCircle, Wallet, CreditCard, Smartphone } from 'lucide-react';
 import { PayPalButtons } from "@paypal/react-paypal-js";
 
 const Overlay = styled(motion.div)`
@@ -229,15 +229,15 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
             {isApprove && (
               <MethodSelector>
                 <MethodCard $active={paymentMethod === 'paypal'} onClick={() => setPaymentMethod('paypal')}>
-                  <MethodIcon>🅿️</MethodIcon>
+                  <MethodIcon><Wallet size={20} color={paymentMethod === 'paypal' ? '#3B82F6' : '#64748B'} /></MethodIcon>
                   <MethodLabel $active={paymentMethod === 'paypal'}>PayPal</MethodLabel>
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'card'} onClick={() => setPaymentMethod('card')}>
-                  <MethodIcon>💳</MethodIcon>
+                  <MethodIcon><CreditCard size={20} color={paymentMethod === 'card' ? '#3B82F6' : '#64748B'} /></MethodIcon>
                   <MethodLabel $active={paymentMethod === 'card'}>Visa/Card</MethodLabel>
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'helakuru'} onClick={() => setPaymentMethod('helakuru')}>
-                  <MethodIcon>📱</MethodIcon>
+                  <MethodIcon><Smartphone size={20} color={paymentMethod === 'helakuru' ? '#3B82F6' : '#64748B'} /></MethodIcon>
                   <MethodLabel $active={paymentMethod === 'helakuru'}>Helakuru</MethodLabel>
                 </MethodCard>
               </MethodSelector>
@@ -246,55 +246,65 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
             <Actions>
               <Button onClick={onClose}>Cancel</Button>
               {isApprove ? (
-                <div style={{ flex: 1.5 }}>
-                  {paymentMethod === 'helakuru' ? (
-                    <Button
-                      $primary
-                      $bg="#FF4E00"
-                      style={{ width: '100%', height: 44, borderRadius: 10 }}
-                      disabled={isHelakuruProcessing}
-                      onClick={async () => {
-                        setIsHelakuruProcessing(true);
-                        // Simulating Helakuru Pay Payout Flow
-                        setTimeout(() => {
-                          onConfirm(`Helakuru Pay Transaction: HLK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
-                          setIsHelakuruProcessing(false);
-                        }, 2000);
-                      }}
+                <div style={{ flex: 1.5, minHeight: '44px' }}>
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={paymentMethod}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      {isHelakuruProcessing ? 'Processing Helakuru...' : 'Pay with Helakuru'}
-                    </Button>
-                  ) : (
-                    <PayPalButtons
-                      style={{
-                        layout: 'horizontal',
-                        height: 44,
-                        color: 'blue',
-                        label: paymentMethod === 'card' ? 'buynow' : 'pay',
-                        tagline: false
-                      }}
-                      fundingSource={paymentMethod === 'card' ? 'card' : undefined}
-                      createOrder={(data, actions) => {
-                        const usdAmount = (request.cash / 300).toFixed(2);
-                        return actions.order.create({
-                          purchase_units: [{
-                            amount: {
-                              value: usdAmount,
-                              currency_code: 'USD'
-                            },
-                            description: `Reward Withdrawal for ${request.citizen} via ${paymentMethod}`
-                          }],
-                        });
-                      }}
-                      onApprove={async (data, actions) => {
-                        const details = await actions.order.capture();
-                        onConfirm(`${paymentMethod.toUpperCase()} Transaction ID: ${details.id}`);
-                      }}
-                      onError={(err) => {
-                        console.error('Payment Error:', err);
-                      }}
-                    />
-                  )}
+                      {paymentMethod === 'helakuru' ? (
+                        <Button
+                          $primary
+                          $bg="#FF4E00"
+                          style={{ width: '100%', height: 44, borderRadius: 10 }}
+                          disabled={isHelakuruProcessing}
+                          onClick={async () => {
+                            setIsHelakuruProcessing(true);
+                            // Simulating Helakuru Pay Payout Flow
+                            setTimeout(() => {
+                              onConfirm(`Helakuru Pay Transaction: HLK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
+                              setIsHelakuruProcessing(false);
+                            }, 2000);
+                          }}
+                        >
+                          {isHelakuruProcessing ? 'Processing Helakuru...' : 'Pay with Helakuru'}
+                        </Button>
+                      ) : (
+                        <PayPalButtons
+                          style={{
+                            layout: 'horizontal',
+                            height: 44,
+                            color: 'blue',
+                            label: paymentMethod === 'card' ? 'buynow' : 'pay',
+                            tagline: false
+                          }}
+                          fundingSource={paymentMethod === 'card' ? 'card' : undefined}
+                          createOrder={(data, actions) => {
+                            const usdAmount = (request.cash / 300).toFixed(2);
+                            return actions.order.create({
+                              purchase_units: [{
+                                amount: {
+                                  value: usdAmount,
+                                  currency_code: 'USD'
+                                },
+                                description: `Reward Withdrawal for ${request.citizen} via ${paymentMethod}`
+                              }],
+                            });
+                          }}
+                          onApprove={async (data, actions) => {
+                            const details = await actions.order.capture();
+                            onConfirm(`${paymentMethod.toUpperCase()} Transaction ID: ${details.id}`);
+                          }}
+                          onError={(err) => {
+                            console.error('Payment Error:', err);
+                          }}
+                        />
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
                 </div>
               ) : (
                 <Button $primary $bg={config.buttonBg} onClick={onConfirm}>
