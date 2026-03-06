@@ -45,8 +45,8 @@ const Title = styled.h3`
 `;
 
 const CloseButton = styled.button`
-  background: white;
-  border: 1px solid ${props => props.$border};
+  background: #EF4444;
+  border: none;
   border-radius: 50%;
   width: 32px;
   height: 32px;
@@ -54,13 +54,13 @@ const CloseButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: ${props => props.$color};
-  transition: all 0.2s;
-  
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
   &:hover {
-    transform: rotate(90deg);
-    background: ${props => props.$hoverBg};
-    color: white;
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
   }
 `;
 
@@ -269,8 +269,8 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
             <Title $color={config.color}>
               <Icon size={20} /> {config.title}
             </Title>
-            <CloseButton $border={config.border} $color={config.color} $hoverBg={config.buttonBg} onClick={onClose}>
-              <X size={16} />
+            <CloseButton onClick={onClose}>
+              <X size={20} strokeWidth={2.5} />
             </CloseButton>
           </Header>
 

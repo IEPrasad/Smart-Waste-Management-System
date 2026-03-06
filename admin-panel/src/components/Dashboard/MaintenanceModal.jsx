@@ -41,10 +41,23 @@ const Subtitle = styled.p`
 `;
 
 const CloseButton = styled.button`
-  background: white; border: 1px solid #FEF3C7; borderRadius: 50%;
-  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #92400E; transition: all 0.2s;
-  &:hover { background: #D97706; color: white; transform: rotate(90deg); }
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
 `;
 
 const Body = styled.div`
@@ -120,7 +133,7 @@ const MaintenanceModal = ({ isOpen, onClose }) => {
                             <Title><Wrench size={24} /> Fleet Maintenance</Title>
                             <Subtitle>2 Vehicles require service checks</Subtitle>
                         </TitleBlock>
-                        <CloseButton onClick={onClose}><X size={20} /></CloseButton>
+                        <CloseButton onClick={onClose}><X size={20} strokeWidth={2.5} /></CloseButton>
                     </Header>
 
                     <Body>

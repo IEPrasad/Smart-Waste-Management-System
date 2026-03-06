@@ -174,24 +174,24 @@ border: 1px solid #E2E8F0; cursor: pointer;
 `;
 
 // Removed CloseButton styled component in favor of inline logic for absolute control
-const CloseButtonWrapper = styled.button`
-background: #F1F5F9;
-border - radius: 50 %;
-width: 36px;
-height: 36px;
-display: flex;
-align - items: center;
-justify - content: center;
-cursor: pointer;
-border: none;
-transition: all 0.2s ease;
-color: #64748B;
-    
-    &:hover {
-    background: #EF4444;
-    color: white;
-    transform: rotate(90deg);
-}
+const CloseButton = styled.button`
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
 `;
 
 // Removed DriverLoadBar as requested
@@ -255,27 +255,9 @@ const AssignmentModal = ({ isOpen, onClose, drivers = [], requestIds = [], onAss
                                 Deploying 1 driver for {requestIds.length} pending zones
                             </p>
                         </div>
-                        <button
-                            onClick={onClose}
-                            onMouseEnter={() => setIsCloseHovered(true)}
-                            onMouseLeave={() => setIsCloseHovered(false)}
-                            style={{
-                                background: isCloseHovered ? '#EF4444' : '#F1F5F9',
-                                border: 'none',
-                                borderRadius: '12px',
-                                width: '36px', height: '36px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                transform: isCloseHovered ? 'rotate(90deg)' : 'rotate(0deg)'
-                            }}
-                        >
-                            <X
-                                size={20}
-                                strokeWidth={2.5}
-                                color={isCloseHovered ? 'white' : '#64748B'}
-                            />
-                        </button>
+                        <CloseButton onClick={onClose}>
+                            <X size={20} strokeWidth={2.5} />
+                        </CloseButton>
                     </Header>
 
                     <SearchSection>

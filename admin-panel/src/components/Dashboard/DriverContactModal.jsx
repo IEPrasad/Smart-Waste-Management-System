@@ -35,10 +35,23 @@ const Title = styled.h3`
 `;
 
 const CloseButton = styled.button`
-  background: #F1F5F9; border: none; borderRadius: 50%;
-  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #64748B; transition: all 0.2s;
-  &:hover { background: #EF4444; color: white; transform: rotate(90deg); }
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
 `;
 
 const SearchContainer = styled.div`
@@ -171,7 +184,7 @@ const DriverContactModal = ({ isOpen, onClose }) => {
         >
           <Header>
             <Title>Driver Contacts</Title>
-            <CloseButton onClick={onClose}><X size={18} /></CloseButton>
+            <CloseButton onClick={onClose}><X size={20} strokeWidth={2.5} /></CloseButton>
           </Header>
 
           <SearchContainer>

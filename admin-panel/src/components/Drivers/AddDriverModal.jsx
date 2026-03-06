@@ -1,7 +1,26 @@
-import React from 'react';
-import './AddDriverModal.css';
-import CloseIcon from '@mui/icons-material/Close';
+import { X } from 'lucide-react';
+import styled from 'styled-components';
 import { supabase } from '../../lib/supabaseClient';
+
+const CloseButton = styled.button`
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
+`;
 
 const AddDriverModal = ({ isOpen, onClose }) => {
     const [formData, setFormData] = React.useState({
@@ -99,7 +118,9 @@ const AddDriverModal = ({ isOpen, onClose }) => {
             <div className="modal-container">
                 <div className="modal-header">
                     <h2>Add New Driver</h2>
-                    <button className="close-btn" onClick={onClose} disabled={isLoading}><CloseIcon /></button>
+                    <CloseButton onClick={onClose} disabled={isLoading}>
+                        <X size={20} strokeWidth={2.5} />
+                    </CloseButton>
                 </div>
                 <div className="modal-body">
                     {error && <div className="error-message" style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
