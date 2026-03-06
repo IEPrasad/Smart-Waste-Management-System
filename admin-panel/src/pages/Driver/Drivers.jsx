@@ -9,6 +9,7 @@ import VehicleCard from '../../components/Vehicles/VehicleCard';
 import VehicleDetailsModal from '../../components/Vehicles/VehicleDetailsModal';
 import { getAllDrivers } from '../../services/driverService';
 import { getAllVehicles } from '../../services/vehicleService';
+import { supabase } from '../../lib/supabaseClient';
 import CircularProgress from '@mui/material/CircularProgress';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -38,13 +39,35 @@ const Drivers = () => {
     const fetchDrivers = async () => {
         setLoading(true);
         setError(null);
-        const { data, error: fetchError } = await getAllDrivers();
 
-        if (fetchError) {
+        try {
+            const { data } = await supabase
+                .from('driver')
+                .select('*, vehicles(vehicle_no)')
+                .order('full_name');
+
+            const { data: pickupsData } = await supabase
+                .from('pickups')
+                .select('*')
+                .not('driver_id', 'is', null);
+
+            if (data) {
+                const formattedDrivers = data.map(d => {
+                    const myPickups = pickupsData ? pickupsData.filter(p => p.driver_id === d.id) : [];
+                    const completed = myPickups.filter(p => p.status === 'completed').length;
+
+                    return {
+                        ...d,
+                        vehicle_number: d.vehicles ? d.vehicles.vehicle_no : null,
+                        assignments: myPickups,
+                        completedAssignments: completed
+                    };
+                });
+                setDrivers(formattedDrivers);
+            }
+        } catch (fetchError) {
             setError('Failed to load drivers. Please try again.');
             console.error('Error fetching drivers:', fetchError);
-        } else {
-            setDrivers(data);
         }
         setLoading(false);
     };

@@ -973,12 +973,21 @@ const EditScheduleModal = ({ isOpen, onClose, schedule, onSave }) => {
 
 const SmartScheduleDashboardStyled = ({
     requests = [],
+    pickups = [],
     drivers = [],
     divisions = [],
     onAssignDriver
 }) => {
     const [activeTab, setActiveTab] = useState('waiting');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    // Stats Calculations - Now with real data
+    const [stats, setStats] = useState({
+        totalZones: divisions.length,
+        pendingTasks: 0,
+        completedToday: 0,
+        efficiencyRate: 0
+    });
 
     // Schedule State
     const [days, setDays] = useState([
@@ -999,22 +1008,51 @@ const SmartScheduleDashboardStyled = ({
     // Logic Reuse
     const divisionData = useMemo(() => {
         const hiddenMap = {};
+
+        // 1. Initialize all predefined divisions from the database to guarantee they show up
         divisions.forEach(d => {
-            hiddenMap[d.name] = { ...d, count: 0, organic: 0, recycle: 0, requests: [] };
+            const key = d.name.trim().toLowerCase();
+            hiddenMap[key] = { ...d, count: 0, organic: 0, recycle: 0, requests: [], originalName: d.name };
         });
+
+        // 2. Map existing requests dynamically to correct categories (or "Other"/New matching ones)
         requests.forEach(r => {
-            if (hiddenMap[r.division]) {
-                hiddenMap[r.division].count++;
-                hiddenMap[r.division].requests.push(r);
-                const types = r.waste_type || [];
-                const isOrganic = types.some(t => t.toLowerCase().includes('organic') || t.toLowerCase().includes('compost'));
-                if (isOrganic) hiddenMap[r.division].organic++;
-                else hiddenMap[r.division].recycle++;
+            const reqDiv = (r.division || 'Unknown').trim();
+            const key = reqDiv.toLowerCase();
+
+            // If a division name isn't recognized from DB initially, dynamically add it
+            if (!hiddenMap[key]) {
+                hiddenMap[key] = {
+                    id: `dynamic-${key}`,
+                    name: reqDiv,
+                    originalName: reqDiv,
+                    count: 0,
+                    organic: 0,
+                    recycle: 0,
+                    requests: []
+                };
             }
+
+            hiddenMap[key].count++;
+            hiddenMap[key].requests.push(r);
+
+            const types = r.waste_type || [];
+            const isOrganic = types.some(t => t.toLowerCase().includes('organic') || t.toLowerCase().includes('compost'));
+
+            if (isOrganic) hiddenMap[key].organic++;
+            else hiddenMap[key].recycle++;
         });
-        return Object.values(hiddenMap).sort((a, b) => b.count - a.count);
+
+        // Map back to original names for rendering (prevent showing lowercase versions unexpectedly)
+        const standardizedMapping = Object.values(hiddenMap).map(div => ({
+            ...div,
+            name: div.originalName
+        }));
+
+        return standardizedMapping.sort((a, b) => b.count - a.count);
 
     }, [requests, divisions]);
+
 
     const efficiencyRate = useMemo(() => {
         const completed = requests.filter(r => r.status === 'completed').length;
@@ -1118,6 +1156,72 @@ const SmartScheduleDashboardStyled = ({
                                 />
                             ))}
                         </AnimatePresence>
+                    </Grid2Col>
+                </StyledSection>
+
+                {/* Active Deployments */}
+                <StyledSection>
+                    <SectionHeader>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                <div style={{ padding: '8px', background: theme.colors.organic.light, borderRadius: '8px', color: theme.colors.organic.main }}>
+                                    <Truck size={24} />
+                                </div>
+                                <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Active Deployments</h2>
+                            </div>
+                            <p style={{ color: theme.colors.text.secondary, marginLeft: '56px', margin: 0 }}>Live tracking of assigned fleets</p>
+                        </div>
+                    </SectionHeader>
+
+                    <Grid2Col>
+                        {drivers.filter(d => pickups.some(p => p.driver_id === d.id && p.status === 'pending')).length === 0 ? (
+                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: theme.colors.text.muted, background: '#F8FAFC', borderRadius: '16px', border: '1px dashed #E2E8F0' }}>
+                                <Truck size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                                <h3 style={{ margin: '0 0 8px 0', color: theme.colors.text.secondary }}>No Active Deployments</h3>
+                                <p style={{ margin: 0, fontSize: '14px' }}>Assign fleets to pending zones to see them here.</p>
+                            </div>
+                        ) : drivers.filter(d => pickups.some(p => p.driver_id === d.id && p.status === 'pending')).map(driver => {
+                            const driverPickups = pickups.filter(p => p.driver_id === driver.id && p.status === 'pending');
+                            // Extract unique zone names
+                            const activeZones = [...new Set(driverPickups.map(p => p.citizens?.division).filter(Boolean))];
+
+                            return (
+                                <CardBase key={driver.id} style={{ border: '1px solid #E2E8F0', background: 'white' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: 40, height: 40, borderRadius: '50%', background: theme.colors.primary.light, color: theme.colors.primary.main, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                                {driver.photo_url ? <img src={driver.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} /> : driver.full_name?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontWeight: 'bold', fontSize: '16px' }}>{driver.full_name}</h4>
+                                                <span style={{ fontSize: '12px', color: theme.colors.text.secondary }}>{driver.vehicle_number || 'Unassigned Vehicle'}</span>
+                                            </div>
+                                        </div>
+                                        <Badge style={{ background: theme.colors.organic.light, color: theme.colors.organic.text, boxShadow: 'none' }}>
+                                            <Activity size={12} /> In Progress
+                                        </Badge>
+                                    </div>
+                                    <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '12px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>
+                                            <span style={{ color: theme.colors.text.secondary }}>Assigned Pickups</span>
+                                            <span>{driverPickups.length} pending in {activeZones.length} zones</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                            {activeZones.slice(0, 3).map((zone, idx) => (
+                                                <span key={idx} style={{ fontSize: '11px', background: 'white', border: '1px solid #E2E8F0', padding: '4px 8px', borderRadius: '100px' }}>
+                                                    {zone}
+                                                </span>
+                                            ))}
+                                            {activeZones.length > 3 && (
+                                                <span style={{ fontSize: '11px', background: 'white', border: '1px solid #E2E8F0', padding: '4px 8px', borderRadius: '100px', color: theme.colors.text.secondary }}>
+                                                    +{activeZones.length - 3} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardBase>
+                            );
+                        })}
                     </Grid2Col>
                 </StyledSection>
 
