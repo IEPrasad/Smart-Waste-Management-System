@@ -68,66 +68,66 @@ const Trend = styled.div`
   opacity: 0.95;
 `;
 
-const FinancialKPICards = () => {
-    const metrics = [
-        {
-            label: 'Total Income',
-            value: 'LKR 2,450,000',
-            trend: '+12% from last month',
-            trendUp: true,
-            gradient: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
-            icon: DollarSign
-        },
-        {
-            label: 'Total Expenses',
-            value: 'LKR 1,850,000',
-            trend: '+8% from last month',
-            trendUp: true,
-            gradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
-            icon: TrendingDown
-        },
-        {
-            label: 'Net Balance',
-            value: 'LKR 600,000',
-            trend: '+22% from last month',
-            trendUp: true,
-            gradient: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-            icon: Scale
-        },
-        {
-            label: 'Waste Collected',
-            value: '124.5 tonnes',
-            trend: '+6% from last week',
-            trendUp: true,
-            gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-            icon: Trash2
-        }
-    ];
+const FinancialKPICards = ({ stats }) => {
+  const metrics = [
+    {
+      label: 'Total Income',
+      value: `LKR ${stats.totalIncome.toLocaleString()}`,
+      trend: '+12% from last month',
+      trendUp: true,
+      gradient: 'linear-gradient(135deg, #10B981 0%, #047857 100%)',
+      icon: DollarSign
+    },
+    {
+      label: 'Total Expenses',
+      value: `LKR ${stats.totalExpenses.toLocaleString()}`,
+      trend: '+8% from last month',
+      trendUp: true,
+      gradient: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+      icon: TrendingDown
+    },
+    {
+      label: 'Net Balance',
+      value: `LKR ${stats.netBalance.toLocaleString()}`,
+      trend: '+22% from last month',
+      trendUp: true,
+      gradient: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+      icon: Scale
+    },
+    {
+      label: 'Waste Collected',
+      value: `${stats.totalWaste.toFixed(1)} tonnes`,
+      trend: '+6% from last week',
+      trendUp: true,
+      gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+      icon: Trash2
+    }
+  ];
 
-    return (
-        <Grid>
-            {metrics.map((metric, idx) => {
-                const Icon = metric.icon;
-                const TrendIcon = metric.trendUp ? TrendingUp : TrendingDown;
+  return (
+    <Grid>
+      {metrics.map((metric, idx) => {
+        const Icon = metric.icon;
+        const TrendIcon = metric.trendUp ? TrendingUp : TrendingDown;
 
-                return (
-                    <Card key={idx} $gradient={metric.gradient}>
-                        <Header>
-                            <Label>{metric.label}</Label>
-                            <IconWrapper>
-                                <Icon size={24} />
-                            </IconWrapper>
-                        </Header>
-                        <Value>{metric.value}</Value>
-                        <Trend>
-                            <TrendIcon size={16} />
-                            {metric.trend}
-                        </Trend>
-                    </Card>
-                );
-            })}
-        </Grid>
-    );
+        return (
+          <Card key={idx} $gradient={metric.gradient}>
+            <Header>
+              <Label>{metric.label}</Label>
+              <IconWrapper>
+                <Icon size={24} />
+              </IconWrapper>
+            </Header>
+            <Value>{metric.value}</Value>
+            <Trend>
+              <TrendIcon size={16} />
+              {metric.trend}
+            </Trend>
+          </Card>
+        );
+      })}
+    </Grid>
+  );
 };
 
 export default FinancialKPICards;

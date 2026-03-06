@@ -74,60 +74,53 @@ const StatValue = styled.div`
   color: #0F172A;
 `;
 
-const ExpenseBreakdownChart = () => {
-    const data = [
-        { month: 'Jan', drivers: 580000, vehicles: 320000 },
-        { month: 'Feb', drivers: 590000, vehicles: 280000 },
-        { month: 'Mar', drivers: 610000, vehicles: 340000 },
-        { month: 'Apr', drivers: 625000, vehicles: 310000 }
-    ];
+const ExpenseBreakdownChart = ({ data, totalDriverCosts, totalVehicleCosts }) => {
+  return (
+    <Card>
+      <Header>
+        <Title>Expense Breakdown</Title>
+        <Subtitle>Monthly comparison</Subtitle>
+      </Header>
 
-    return (
-        <Card>
-            <Header>
-                <Title>Expense Breakdown</Title>
-                <Subtitle>Monthly comparison</Subtitle>
-            </Header>
+      <ChartContainer>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} barGap={8}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
+            <Tooltip
+              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              formatter={(value) => `LKR ${(value / 1000).toFixed(0)}K`}
+            />
+            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+            <Bar dataKey="drivers" name="Driver Costs" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={32} />
+            <Bar dataKey="vehicles" name="Vehicle Costs" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={32} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartContainer>
 
-            <ChartContainer>
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} barGap={8}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                        <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
-                        <Tooltip
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                            formatter={(value) => `LKR ${(value / 1000).toFixed(0)}K`}
-                        />
-                        <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                        <Bar dataKey="drivers" name="Driver Costs" fill="#3B82F6" radius={[4, 4, 0, 0]} barSize={32} />
-                        <Bar dataKey="vehicles" name="Vehicle Costs" fill="#F59E0B" radius={[4, 4, 0, 0]} barSize={32} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </ChartContainer>
-
-            <Stats>
-                <StatItem>
-                    <StatIcon $bg="#EFF6FF" $color="#3B82F6">
-                        <Users size={20} />
-                    </StatIcon>
-                    <StatInfo>
-                        <StatLabel>Driver Costs</StatLabel>
-                        <StatValue>LKR 1.2M</StatValue>
-                    </StatInfo>
-                </StatItem>
-                <StatItem>
-                    <StatIcon $bg="#FFFBEB" $color="#F59E0B">
-                        <Truck size={20} />
-                    </StatIcon>
-                    <StatInfo>
-                        <StatLabel>Vehicle Costs</StatLabel>
-                        <StatValue>LKR 650K</StatValue>
-                    </StatInfo>
-                </StatItem>
-            </Stats>
-        </Card>
-    );
+      <Stats>
+        <StatItem>
+          <StatIcon $bg="#EFF6FF" $color="#3B82F6">
+            <Users size={20} />
+          </StatIcon>
+          <StatInfo>
+            <StatLabel>Driver Costs</StatLabel>
+            <StatValue>LKR {(totalDriverCosts / 1000000).toFixed(1)}M</StatValue>
+          </StatInfo>
+        </StatItem>
+        <StatItem>
+          <StatIcon $bg="#FFFBEB" $color="#F59E0B">
+            <Truck size={20} />
+          </StatIcon>
+          <StatInfo>
+            <StatLabel>Vehicle Costs</StatLabel>
+            <StatValue>LKR {(totalVehicleCosts / 1000).toFixed(0)}K</StatValue>
+          </StatInfo>
+        </StatItem>
+      </Stats>
+    </Card>
+  );
 };
 
 export default ExpenseBreakdownChart;
