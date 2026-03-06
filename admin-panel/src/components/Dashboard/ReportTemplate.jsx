@@ -205,10 +205,10 @@ const ReportTemplate = ({ data, id = "operational-report" }) => {
                     tickLine={false}
                     tick={{ fontSize: 10, fill: '#64748B' }}
                   />
-                  <Tooltip />
+                  <Tooltip isAnimationActive={false} />
                   <Legend wrapperStyle={{ fontSize: 10, fontWeight: 700 }} />
-                  <Bar dataKey="compost" name="Compost (kg)" fill="#10B981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="recycle" name="Recycle (kg)" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="compost" name="Compost (kg)" fill="#10B981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="recycle" name="Recycle (kg)" fill="#3B82F6" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

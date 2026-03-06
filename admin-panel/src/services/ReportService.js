@@ -43,12 +43,14 @@ export const generateOperationalReportData = async () => {
 
             // Monthly Trends
             const date = new Date(log.created_at);
-            const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-            if (!monthlyTrends[monthKey]) {
-                monthlyTrends[monthKey] = { name: monthKey, compost: 0, recycle: 0, sortKey: date.getTime() };
+            if (!isNaN(date.getTime())) {
+                const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+                if (!monthlyTrends[monthKey]) {
+                    monthlyTrends[monthKey] = { name: monthKey, compost: 0, recycle: 0, sortKey: date.getTime() };
+                }
+                monthlyTrends[monthKey].compost += Number(log.compost_weight || 0);
+                monthlyTrends[monthKey].recycle += Number(log.recycling_weight || 0);
             }
-            monthlyTrends[monthKey].compost += Number(log.compost_weight || 0);
-            monthlyTrends[monthKey].recycle += Number(log.recycling_weight || 0);
         });
 
         const formattedDivisions = Object.entries(divisionStats).map(([name, stats]) => ({
