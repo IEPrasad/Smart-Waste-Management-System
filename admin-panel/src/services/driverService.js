@@ -24,16 +24,16 @@ export const getAllDrivers = async () => {
         // Fetch vehicles if there are any vehicle IDs
         if (vehicleIds.length > 0) {
             const { data: vehicles, error: vehiclesError } = await supabase
-                .from('vehicle')
-                .select('id, vehicle_number')
+                .from('vehicles')
+                .select('id, vehicle_no')
                 .in('id', vehicleIds);
 
             if (vehiclesError) {
                 console.error('Error fetching vehicles:', vehiclesError.message);
             } else if (vehicles) {
-                // Create a map of vehicle_id -> vehicle_number
+                // Create a map of vehicle_id -> vehicle_no
                 vehicleMap = vehicles.reduce((acc, v) => {
-                    acc[v.id] = v.vehicle_number;
+                    acc[v.id] = v.vehicle_no;
                     return acc;
                 }, {});
             }
@@ -73,13 +73,13 @@ export const getDriverById = async (driverId) => {
 
         if (driver.current_vehicle_id) {
             const { data: vehicle, error: vehicleError } = await supabase
-                .from('vehicle')
-                .select('vehicle_number')
+                .from('vehicles')
+                .select('vehicle_no')
                 .eq('id', driver.current_vehicle_id)
                 .single();
 
             if (!vehicleError && vehicle) {
-                vehicleNumber = vehicle.vehicle_number;
+                vehicleNumber = vehicle.vehicle_no;
             }
         }
 

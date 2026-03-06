@@ -1,40 +1,15 @@
 import React, { useState } from 'react';
 import './VehicleDetailsModal.css';
-import { X } from 'lucide-react';
-import styled from 'styled-components';
+import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { updateVehicleStatus, deleteVehicle } from '../../services/vehicleService';
-import useEscapeKey from '../../hooks/useEscapeKey';
-
-const CloseButton = styled.button`
-  background: #EF4444;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white;
-
-  &:hover {
-    background: #DC2626;
-    transform: rotate(90deg) scale(1.1);
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-  }
-`;
 
 const VehicleDetailsModal = ({ isOpen, onClose, vehicle, onUpdate, onDelete }) => {
     const [selectedStatus, setSelectedStatus] = useState(vehicle?.status || 'Good');
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState(null);
-
-    // Use Escape key to close
-    useEscapeKey(onClose, isOpen);
 
     // Reset state when modal opens
     React.useEffect(() => {
@@ -90,9 +65,9 @@ const VehicleDetailsModal = ({ isOpen, onClose, vehicle, onUpdate, onDelete }) =
                 {/* Header */}
                 <div className="vehicle-details-header">
                     <h2>Vehicle Details</h2>
-                    <CloseButton onClick={onClose}>
-                        <X size={20} strokeWidth={2.5} />
-                    </CloseButton>
+                    <button className="vehicle-details-close-btn" onClick={onClose}>
+                        <CloseIcon />
+                    </button>
                 </div>
 
                 {/* Vehicle Info */}

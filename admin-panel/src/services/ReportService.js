@@ -24,9 +24,9 @@ export const generateOperationalReportData = async () => {
         const [pendingRes, ongoingRes, totalIssuesRes, pendingIssuesRes, resolvedIssuesRes] = await Promise.all([
             supabase.from('waste_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
             supabase.from('pickups').select('id', { count: 'exact', head: true }).eq('status', 'ongoing'),
-            supabase.from('issues').select('id', { count: 'exact', head: true }),
-            supabase.from('issues').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-            supabase.from('issues').select('id', { count: 'exact', head: true }).eq('status', 'resolved')
+            supabase.from('waste_issues').select('id', { count: 'exact', head: true }),
+            supabase.from('waste_issues').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+            supabase.from('waste_issues').select('id', { count: 'exact', head: true }).eq('status', 'resolved')
         ]);
 
         // Process Division Data & Monthly Trends
