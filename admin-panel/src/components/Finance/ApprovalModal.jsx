@@ -380,9 +380,9 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'helakuru'} $method="helakuru" onClick={() => setPaymentMethod('helakuru')}>
                   <MethodIconContainer>
-                    <img src={helakuruLogo} alt="Helakuru" />
+                    <img src={helakuruLogo} alt="හෙළPay" />
                   </MethodIconContainer>
-                  <MethodLabel $active={paymentMethod === 'helakuru'} $method="helakuru">Helakuru</MethodLabel>
+                  <MethodLabel $active={paymentMethod === 'helakuru'} $method="helakuru">හෙළPay</MethodLabel>
                 </MethodCard>
               </MethodSelector>
             )}
@@ -407,14 +407,14 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                           disabled={isHelakuruProcessing}
                           onClick={async () => {
                             setIsHelakuruProcessing(true);
-                            // Simulating Helakuru Pay Payout Flow
+                            // Simulating හෙළPay Payout Flow
                             setTimeout(() => {
-                              onConfirm(`Helakuru Pay Transaction: HLK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
+                              onConfirm(`හෙළPay Transaction: HP-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
                               setIsHelakuruProcessing(false);
                             }, 2000);
                           }}
                         >
-                          {isHelakuruProcessing ? 'Processing Helakuru...' : 'Pay with Helakuru'}
+                          {isHelakuruProcessing ? 'Processing හෙළPay...' : 'Pay with හෙළPay'}
                         </Button>
                       ) : (
                         <PayPalButtons
