@@ -184,6 +184,44 @@ const MethodLabel = styled.div`
   letter-spacing: 0.5px;
 `;
 
+const BankSection = styled.div`
+  margin: 16px 0;
+  padding: 16px;
+  background: #F1F5F9;
+  border-radius: 12px;
+  border-left: 4px solid #94A3B8;
+`;
+
+const BankTitle = styled.h4`
+  font-size: 12px;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const BankRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  &:last-child { margin-bottom: 0; }
+`;
+
+const BankLabel = styled.span`
+  font-size: 11px;
+  color: #64748B;
+  font-weight: 600;
+`;
+
+const BankValue = styled.span`
+  font-size: 11px;
+  color: #0F172A;
+  font-weight: 700;
+`;
+
 const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
   const [paymentMethod, setPaymentMethod] = useState('paypal');
   const [isHelakuruProcessing, setIsHelakuruProcessing] = useState(false);
@@ -250,6 +288,28 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
               <Value>LKR {request.cash.toLocaleString()}</Value>
             </InfoRow>
 
+            {isApprove && request.bankName && (
+              <BankSection>
+                <BankTitle>🏦 Citizen Bank Details</BankTitle>
+                <BankRow>
+                  <BankLabel>Bank</BankLabel>
+                  <BankValue>{request.bankName}</BankValue>
+                </BankRow>
+                <BankRow>
+                  <BankLabel>Account Holder</BankLabel>
+                  <BankValue>{request.accountHolder}</BankValue>
+                </BankRow>
+                <BankRow>
+                  <BankLabel>Account Number</BankLabel>
+                  <BankValue>{request.accountNumber}</BankValue>
+                </BankRow>
+                <BankRow>
+                  <BankLabel>Branch</BankLabel>
+                  <BankValue>{request.branch}</BankValue>
+                </BankRow>
+              </BankSection>
+            )}
+
             <Message>{config.message}</Message>
 
             {isApprove && (
@@ -262,13 +322,13 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'card'} $method="card" onClick={() => setPaymentMethod('card')}>
                   <MethodIconContainer>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg" alt="Visa" />
                   </MethodIconContainer>
                   <MethodLabel $active={paymentMethod === 'card'} $method="card">Visa/Card</MethodLabel>
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'helakuru'} $method="helakuru" onClick={() => setPaymentMethod('helakuru')}>
                   <MethodIconContainer>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Helakuru_new_logo.png" alt="Helakuru" />
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4b/Helakuru_logo.png" alt="Helakuru" />
                   </MethodIconContainer>
                   <MethodLabel $active={paymentMethod === 'helakuru'} $method="helakuru">Helakuru</MethodLabel>
                 </MethodCard>

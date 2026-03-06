@@ -181,7 +181,11 @@ const RewardRequestsTable = () => {
           points: Number(req.amount),
           cash: Number(req.amount),
           requestDate: requestDate.toISOString().split('T')[0],
-          daysActive: daysActive
+          daysActive: daysActive,
+          bankName: req.bank_name,
+          accountNumber: req.account_number,
+          accountHolder: req.account_holder_name,
+          branch: req.branch
         };
       });
 
