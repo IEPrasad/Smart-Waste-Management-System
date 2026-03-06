@@ -435,11 +435,14 @@ const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }
                                             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: `linear-gradient(to bottom, ${statusColor}, ${statusColor}80)` }} />
                                             <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginLeft: '8px' }}>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    {pickup.waste_types.map((type, tIdx) => (
-                                                        <WasteTypeIcon key={tIdx} $type={type} title={type}>
-                                                            {type === 'Organic' ? <Leaf size={18} /> : type === 'Recycle' ? <Recycle size={18} /> : <Trash2 size={18} />}
-                                                        </WasteTypeIcon>
-                                                    ))}
+                                                    {pickup.waste_types.map((type, tIdx) => {
+                                                        if (type === 'Normal') return null; // Don't show an icon for 'Normal' waste
+                                                        return (
+                                                            <WasteTypeIcon key={tIdx} $type={type} title={type}>
+                                                                {type === 'Organic' ? <Leaf size={18} /> : <Recycle size={18} />}
+                                                            </WasteTypeIcon>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <CitizenInfo>
                                                     <CitizenName>{pickup.citizens?.full_name}</CitizenName>
