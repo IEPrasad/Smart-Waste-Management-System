@@ -27,9 +27,12 @@ export const generateOperationalReportData = async () => {
             supabase.from('issues').select('id', { count: 'exact', head: true }).eq('status', 'pending')
         ]);
 
-        // Process Division Data
+        // Process Division Data & Monthly Trends
         const divisionStats = {};
+        const monthlyTrends = {};
+
         pickupLogs.forEach(log => {
+            // Division Stats
             const div = log.gn_division || 'Other';
             if (!divisionStats[div]) {
                 divisionStats[div] = { compost: 0, recycle: 0, total: 0 };
@@ -37,12 +40,25 @@ export const generateOperationalReportData = async () => {
             divisionStats[div].compost += Number(log.compost_weight || 0);
             divisionStats[div].recycle += Number(log.recycling_weight || 0);
             divisionStats[div].total += 1;
+
+            // Monthly Trends
+            const date = new Date(log.created_at);
+            const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+            if (!monthlyTrends[monthKey]) {
+                monthlyTrends[monthKey] = { name: monthKey, compost: 0, recycle: 0, sortKey: date.getTime() };
+            }
+            monthlyTrends[monthKey].compost += Number(log.compost_weight || 0);
+            monthlyTrends[monthKey].recycle += Number(log.recycling_weight || 0);
         });
 
         const formattedDivisions = Object.entries(divisionStats).map(([name, stats]) => ({
             name,
             ...stats
         })).sort((a, b) => (b.compost + b.recycle) - (a.compost + a.recycle));
+
+        const formattedMonthly = Object.values(monthlyTrends)
+            .sort((a, b) => a.sortKey - b.sortKey)
+            .map(({ name, compost, recycle }) => ({ name, compost, recycle }));
 
         // Summary Calculations
         const totalWaste = pickupLogs.reduce((sum, log) => sum + Number(log.compost_weight || 0) + Number(log.recycling_weight || 0), 0);
@@ -63,7 +79,8 @@ export const generateOperationalReportData = async () => {
                 status: d.is_online ? 'Online' : 'Offline',
                 vehicle: d.current_vehicle_id ? 'Assigned' : 'Unassigned'
             })),
-            divisions: formattedDivisions
+            divisions: formattedDivisions,
+            trends: formattedMonthly
         };
     } catch (error) {
         console.error('Error generating report data:', error);
