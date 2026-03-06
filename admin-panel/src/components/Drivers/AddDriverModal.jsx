@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import styled from 'styled-components';
 import { supabase } from '../../lib/supabaseClient';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const CloseButton = styled.button`
   background: #EF4444;
@@ -32,6 +33,9 @@ const AddDriverModal = ({ isOpen, onClose }) => {
     });
     const [isLoading, setIsLoading] = React.useState(false);
     const [error, setError] = React.useState(null);
+
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     // Reset form when modal opens/closes
     React.useEffect(() => {

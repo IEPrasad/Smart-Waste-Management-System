@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { X, User as PersonIcon, Mail as EmailIcon, Phone as PhoneIcon, Award as BadgeIcon, CreditCard as CreditCardIcon, Truck as LocalShippingIcon, Circle as CircleIcon, History as HistoryIcon } from 'lucide-react';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getDriverPickupLogs } from '../../services/driverService';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const CloseButton = styled.button`
   background: #EF4444;
@@ -29,6 +30,9 @@ const DriverDetailsModal = ({ isOpen, onClose, driver }) => {
     const [logsLoading, setLogsLoading] = useState(false);
     const [logsError, setLogsError] = useState(null);
     const [selectedFilter, setSelectedFilter] = useState('all');
+
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     // Time filter options
     const filterOptions = [

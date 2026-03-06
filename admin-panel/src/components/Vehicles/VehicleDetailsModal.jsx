@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import { updateVehicleStatus, deleteVehicle } from '../../services/vehicleService';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 const CloseButton = styled.button`
   background: #EF4444;
@@ -31,6 +32,9 @@ const VehicleDetailsModal = ({ isOpen, onClose, vehicle, onUpdate, onDelete }) =
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState(null);
+
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     // Reset state when modal opens
     React.useEffect(() => {
