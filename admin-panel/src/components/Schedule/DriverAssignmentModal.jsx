@@ -1,9 +1,33 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Truck, User, CheckCircle } from 'lucide-react';
+import styled from 'styled-components';
+import useEscapeKey from '../../hooks/useEscapeKey';
+
+const CloseButton = styled.button`
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
+`;
 
 const DriverAssignmentModal = ({ isOpen, onClose, drivers, onAssign, isAssigning }) => {
     const [selectedDriverId, setSelectedDriverId] = useState(null);
+
+    useEscapeKey(onClose, isOpen);
 
     const handleAssign = () => {
         if (selectedDriverId) {
@@ -40,12 +64,9 @@ const DriverAssignmentModal = ({ isOpen, onClose, drivers, onAssign, isAssigning
                                     <h2 className="text-lg font-bold text-gray-900">Select Driver</h2>
                                     <p className="text-sm text-gray-500">Choose an available driver for this assignment.</p>
                                 </div>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+                                <CloseButton onClick={onClose}>
+                                    <X size={20} strokeWidth={2.5} />
+                                </CloseButton>
                             </div>
 
                             {/* List */}
@@ -65,8 +86,8 @@ const DriverAssignmentModal = ({ isOpen, onClose, drivers, onAssign, isAssigning
                                                 key={driver.id}
                                                 onClick={() => setSelectedDriverId(driver.id)}
                                                 className={`group relative flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${selectedDriverId === driver.id
-                                                        ? 'border-primary-green bg-green-50/50 shadow-sm'
-                                                        : 'border-transparent bg-gray-50 hover:bg-white hover:shadow-md hover:border-gray-200'
+                                                    ? 'border-primary-green bg-green-50/50 shadow-sm'
+                                                    : 'border-transparent bg-gray-50 hover:bg-white hover:shadow-md hover:border-gray-200'
                                                     }`}
                                             >
                                                 {/* Selection Indicator */}
@@ -115,8 +136,8 @@ const DriverAssignmentModal = ({ isOpen, onClose, drivers, onAssign, isAssigning
                                     onClick={handleAssign}
                                     disabled={!selectedDriverId || isAssigning}
                                     className={`px-6 py-2 rounded-lg text-white font-medium shadow-sm transition-all transform active:scale-95 ${!selectedDriverId || isAssigning
-                                            ? 'bg-gray-300 cursor-not-allowed shadow-none'
-                                            : 'bg-primary-green hover:bg-[#4aa07b] hover:shadow-md'
+                                        ? 'bg-gray-300 cursor-not-allowed shadow-none'
+                                        : 'bg-primary-green hover:bg-[#4aa07b] hover:shadow-md'
                                         }`}
                                 >
                                     {isAssigning ? (

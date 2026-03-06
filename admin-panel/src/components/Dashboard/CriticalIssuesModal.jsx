@@ -41,10 +41,23 @@ const Subtitle = styled.p`
 `;
 
 const CloseButton = styled.button`
-  background: white; border: 1px solid #FECACA; borderRadius: 50%;
-  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #991B1B; transition: all 0.2s;
-  &:hover { background: #DC2626; color: white; transform: rotate(90deg); }
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
 `;
 
 const Body = styled.div`
@@ -115,56 +128,56 @@ const ActionButton = styled.button`
 
 // Mock Data for specific critical view
 const CRITICAL_ISSUES = [
-    { id: 101, type: 'Hazardous Spill', desc: 'Chemical leakage reported near School Zone.', location: 'Zone A - Main St', time: '10 mins ago' },
-    { id: 102, type: 'Blocked Access', desc: 'Garbage truck cannot access narrow lane due to illegal parking.', location: 'Zone C - 5th Ave', time: '25 mins ago' },
-    { id: 103, type: 'Overflowing Bin', desc: 'Major overflow at central market causing health risk.', location: 'Zone B - Market', time: '1 hour ago' },
+  { id: 101, type: 'Hazardous Spill', desc: 'Chemical leakage reported near School Zone.', location: 'Zone A - Main St', time: '10 mins ago' },
+  { id: 102, type: 'Blocked Access', desc: 'Garbage truck cannot access narrow lane due to illegal parking.', location: 'Zone C - 5th Ave', time: '25 mins ago' },
+  { id: 103, type: 'Overflowing Bin', desc: 'Major overflow at central market causing health risk.', location: 'Zone B - Market', time: '1 hour ago' },
 ];
 
 const CriticalIssuesModal = ({ isOpen, onClose }) => {
-    if (!isOpen) return null;
+  if (!isOpen) return null;
 
-    return (
-        <AnimatePresence>
-            <Overlay
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-            >
-                <Content
-                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                    onClick={e => e.stopPropagation()}
-                >
-                    <Header>
-                        <TitleBlock>
-                            <Title><AlertTriangle size={24} /> Critical Issues</Title>
-                            <Subtitle>3 High-Priority incidents require immediate attention</Subtitle>
-                        </TitleBlock>
-                        <CloseButton onClick={onClose}><X size={20} /></CloseButton>
-                    </Header>
+  return (
+    <AnimatePresence>
+      <Overlay
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      >
+        <Content
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <Header>
+            <TitleBlock>
+              <Title><AlertTriangle size={24} /> Critical Issues</Title>
+              <Subtitle>3 High-Priority incidents require immediate attention</Subtitle>
+            </TitleBlock>
+            <CloseButton onClick={onClose}><X size={20} strokeWidth={2.5} /></CloseButton>
+          </Header>
 
-                    <Body>
-                        {CRITICAL_ISSUES.map(issue => (
-                            <IssueItem key={issue.id}>
-                                <IssueHeader>
-                                    <SeverityBadge>Critical</SeverityBadge>
-                                    <Time><Clock size={14} /> {issue.time}</Time>
-                                </IssueHeader>
-                                <Description>{issue.desc}</Description>
-                                <Location><MapPin size={14} /> {issue.location}</Location>
-                                <Actions>
-                                    <ActionButton>View Details</ActionButton>
-                                    <ActionButton $primary>Resolve Now <ArrowRight size={14} /></ActionButton>
-                                </Actions>
-                            </IssueItem>
-                        ))}
-                    </Body>
-                </Content>
-            </Overlay>
-        </AnimatePresence>
-    );
+          <Body>
+            {CRITICAL_ISSUES.map(issue => (
+              <IssueItem key={issue.id}>
+                <IssueHeader>
+                  <SeverityBadge>Critical</SeverityBadge>
+                  <Time><Clock size={14} /> {issue.time}</Time>
+                </IssueHeader>
+                <Description>{issue.desc}</Description>
+                <Location><MapPin size={14} /> {issue.location}</Location>
+                <Actions>
+                  <ActionButton>View Details</ActionButton>
+                  <ActionButton $primary>Resolve Now <ArrowRight size={14} /></ActionButton>
+                </Actions>
+              </IssueItem>
+            ))}
+          </Body>
+        </Content>
+      </Overlay>
+    </AnimatePresence>
+  );
 };
 
 export default CriticalIssuesModal;
