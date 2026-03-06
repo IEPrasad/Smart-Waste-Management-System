@@ -5,8 +5,11 @@ import {
     Leaf, Recycle, Trash2, Zap, LayoutGrid, Info, Activity,
     CalendarDays, Settings, Cloud, CheckSquare, X, RefreshCw
 } from 'lucide-react';
+import { toast, Toaster } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled, { css, keyframes } from 'styled-components';
+import DeploymentDetailsModal from './DeploymentDetailsModal';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 // --- Theme & Style Constants ---
 
@@ -315,6 +318,26 @@ const ModalContent = styled(motion.div)`
   position: relative;
 `;
 
+const CloseButton = styled.button`
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
+`;
+
 const ModalHeader = styled.div`
   padding: 24px;
   border-bottom: 1px solid #E2E8F0;
@@ -571,6 +594,8 @@ const GoogleImportModal = ({ isOpen, onClose, onImport }) => {
     const [isConnecting, setIsConnecting] = useState(false);
 
     // Reset state on open
+    useEscapeKey(onClose, isOpen);
+
     React.useEffect(() => {
         if (isOpen) {
             setStep(1);
@@ -619,34 +644,9 @@ const GoogleImportModal = ({ isOpen, onClose, onImport }) => {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            background: '#F1F5F9',
-                            border: 'none',
-                            cursor: 'pointer',
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s',
-                            color: '#64748B'
-                        }}
-                        onMouseOver={(e) => {
-                            e.currentTarget.style.background = '#EF4444';
-                            e.currentTarget.style.color = 'white';
-                            e.currentTarget.style.transform = 'rotate(90deg)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.currentTarget.style.background = '#F1F5F9';
-                            e.currentTarget.style.color = '#64748B';
-                            e.currentTarget.style.transform = 'rotate(0deg)';
-                        }}
-                    >
-                        <X size={20} />
-                    </button>
+                    <CloseButton onClick={onClose}>
+                        <X size={20} strokeWidth={2.5} />
+                    </CloseButton>
                 </ModalHeader>
 
                 <ModalBody>
@@ -727,9 +727,33 @@ const GoogleImportModal = ({ isOpen, onClose, onImport }) => {
 };
 
 
+const TypeButton = styled.button`
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid ${props => props.$isActive ? props.$color : '#E2E8F0'};
+  background: ${props => props.$isActive ? props.$bg : 'white'};
+  color: ${props => props.$isActive ? props.$textColor : '#64748B'};
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  &:hover {
+    border-color: ${props => props.$color};
+    background: ${props => props.$isActive ? props.$bg : '#F8FAFC'};
+  }
+`;
+
 const EditScheduleModal = ({ isOpen, onClose, schedule, onSave }) => {
     const [localSchedule, setLocalSchedule] = useState(schedule);
     const [selectedDayIndex, setSelectedDayIndex] = useState(null);
+
+    useEscapeKey(onClose, isOpen);
 
     const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
@@ -818,34 +842,9 @@ const EditScheduleModal = ({ isOpen, onClose, schedule, onSave }) => {
                         <h3 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0' }}>Plan Weekly Schedule</h3>
                         <p style={{ margin: 0, color: theme.colors.text.secondary }}>Manage fleet deployment and collection types</p>
                     </div>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            background: '#F1F5F9',
-                            border: 'none',
-                            cursor: 'pointer',
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s',
-                            color: '#64748B'
-                        }}
-                        onMouseOver={(e) => {
-                            e.currentTarget.style.background = '#EF4444';
-                            e.currentTarget.style.color = 'white';
-                            e.currentTarget.style.transform = 'rotate(90deg)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.currentTarget.style.background = '#F1F5F9';
-                            e.currentTarget.style.color = '#64748B';
-                            e.currentTarget.style.transform = 'rotate(0deg)';
-                        }}
-                    >
-                        <X size={20} />
-                    </button>
+                    <CloseButton onClick={onClose}>
+                        <X size={20} strokeWidth={2.5} />
+                    </CloseButton>
                 </ModalHeader>
 
                 <ModalBody>
@@ -908,36 +907,33 @@ const EditScheduleModal = ({ isOpen, onClose, schedule, onSave }) => {
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     {[
-                                        { id: 'Normal', icon: Trash2, label: 'Normal', color: theme.colors.text.primary, bg: '#F1F5F9' },
-                                        { id: 'Organic', icon: Leaf, label: 'Organic', color: theme.colors.organic.main, bg: theme.colors.organic.light },
-                                        { id: 'Recycle', icon: Recycle, label: 'Recycle', color: theme.colors.recycle.main, bg: theme.colors.recycle.light },
-                                        { id: 'Off', icon: Clock, label: 'Day Off', color: theme.colors.text.muted, bg: '#F1F5F9' },
-                                    ].map(type => (
-                                        <button
-                                            key={type.id}
-                                            onClick={() => handleTypeChange(type.id)}
-                                            style={{
-                                                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                                                padding: '12px', borderRadius: '12px', border: '1px solid transparent',
-                                                background: type.bg, color: type.color, cursor: 'pointer', fontWeight: 600, fontSize: '13px'
-                                            }}
+                                        { id: 'Organic', icon: Leaf, label: 'Organic', color: theme.colors.organic.main, bg: theme.colors.organic.light, text: theme.colors.organic.text },
+                                        { id: 'Recycle', icon: Recycle, label: 'Recycle', color: theme.colors.recycle.main, bg: theme.colors.recycle.light, text: theme.colors.recycle.text },
+                                        { id: 'Normal', icon: Trash2, label: 'Normal', color: theme.colors.primary.main, bg: theme.colors.primary.light, text: theme.colors.primary.dark },
+                                        { id: 'Off', icon: Clock, label: 'Day Off', color: '#94A3B8', bg: '#F1F5F9', text: '#475569' }
+                                    ].map((opt) => (
+                                        <TypeButton
+                                            key={opt.id}
+                                            $isActive={localSchedule[selectedDayIndex].type === opt.id}
+                                            $color={opt.color}
+                                            $bg={opt.bg}
+                                            $textColor={opt.text}
+                                            onClick={() => handleTypeChange(opt.id)}
                                         >
-                                            <type.icon size={20} />
-                                            {type.label}
-                                        </button>
+                                            <opt.icon size={20} />
+                                            {opt.label}
+                                        </TypeButton>
                                     ))}
-                                    {/* Clear/Reset Day Button */}
-                                    <button
+                                    <TypeButton
+                                        $color="#CBD5E1"
+                                        $bg="white"
+                                        $textColor={theme.colors.text.secondary}
                                         onClick={() => handleTypeChange('Normal')}
-                                        style={{
-                                            flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-                                            padding: '12px', borderRadius: '12px', border: '1px dashed #CBD5E1',
-                                            background: 'white', color: theme.colors.text.secondary, cursor: 'pointer', fontWeight: 600, fontSize: '13px'
-                                        }}
+                                        style={{ borderStyle: 'dashed' }}
                                     >
                                         <RefreshCw size={20} />
                                         Clear
-                                    </button>
+                                    </TypeButton>
                                 </div>
                             </motion.div>
                         )}
@@ -973,12 +969,23 @@ const EditScheduleModal = ({ isOpen, onClose, schedule, onSave }) => {
 
 const SmartScheduleDashboardStyled = ({
     requests = [],
+    pickups = [],
     drivers = [],
     divisions = [],
     onAssignDriver
 }) => {
     const [activeTab, setActiveTab] = useState('waiting');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedDeploymentDriver, setSelectedDeploymentDriver] = useState(null);
+    const [isDeploymentModalOpen, setIsDeploymentModalOpen] = useState(false);
+
+    // Stats Calculations - Now with real data
+    const [stats, setStats] = useState({
+        totalZones: divisions.length,
+        pendingTasks: 0,
+        completedToday: 0,
+        efficiencyRate: 0
+    });
 
     // Schedule State
     const [days, setDays] = useState([
@@ -994,27 +1001,57 @@ const SmartScheduleDashboardStyled = ({
     const handleSaveSchedule = (newSchedule) => {
         setDays(newSchedule);
         setIsEditModalOpen(false);
+        toast.success('Collection schedule updated successfully!');
     };
 
     // Logic Reuse
     const divisionData = useMemo(() => {
         const hiddenMap = {};
+
+        // 1. Initialize all predefined divisions from the database to guarantee they show up
         divisions.forEach(d => {
-            hiddenMap[d.name] = { ...d, count: 0, organic: 0, recycle: 0, requests: [] };
+            const key = d.name.trim().toLowerCase();
+            hiddenMap[key] = { ...d, count: 0, organic: 0, recycle: 0, requests: [], originalName: d.name };
         });
+
+        // 2. Map existing requests dynamically to correct categories (or "Other"/New matching ones)
         requests.forEach(r => {
-            if (hiddenMap[r.division]) {
-                hiddenMap[r.division].count++;
-                hiddenMap[r.division].requests.push(r);
-                const types = r.waste_type || [];
-                const isOrganic = types.some(t => t.toLowerCase().includes('organic') || t.toLowerCase().includes('compost'));
-                if (isOrganic) hiddenMap[r.division].organic++;
-                else hiddenMap[r.division].recycle++;
+            const reqDiv = (r.division || 'Unknown').trim();
+            const key = reqDiv.toLowerCase();
+
+            // If a division name isn't recognized from DB initially, dynamically add it
+            if (!hiddenMap[key]) {
+                hiddenMap[key] = {
+                    id: `dynamic-${key}`,
+                    name: reqDiv,
+                    originalName: reqDiv,
+                    count: 0,
+                    organic: 0,
+                    recycle: 0,
+                    requests: []
+                };
             }
+
+            hiddenMap[key].count++;
+            hiddenMap[key].requests.push(r);
+
+            const types = r.waste_type || [];
+            const isOrganic = types.some(t => t.toLowerCase().includes('organic') || t.toLowerCase().includes('compost'));
+
+            if (isOrganic) hiddenMap[key].organic++;
+            else hiddenMap[key].recycle++;
         });
-        return Object.values(hiddenMap).sort((a, b) => b.count - a.count);
+
+        // Map back to original names for rendering (prevent showing lowercase versions unexpectedly)
+        const standardizedMapping = Object.values(hiddenMap).map(div => ({
+            ...div,
+            name: div.originalName
+        }));
+
+        return standardizedMapping.sort((a, b) => b.count - a.count);
 
     }, [requests, divisions]);
+
 
     const efficiencyRate = useMemo(() => {
         const completed = requests.filter(r => r.status === 'completed').length;
@@ -1034,6 +1071,7 @@ const SmartScheduleDashboardStyled = ({
 
     return (
         <DashboardContainer>
+            <Toaster position="top-right" />
             <HeaderWrapper>
                 <MaxWidthWrapper>
                     <HeaderContent>
@@ -1121,6 +1159,80 @@ const SmartScheduleDashboardStyled = ({
                     </Grid2Col>
                 </StyledSection>
 
+                {/* Active Deployments */}
+                <StyledSection>
+                    <SectionHeader>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                <div style={{ padding: '8px', background: theme.colors.organic.light, borderRadius: '8px', color: theme.colors.organic.main }}>
+                                    <Truck size={24} />
+                                </div>
+                                <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Active Deployments</h2>
+                            </div>
+                            <p style={{ color: theme.colors.text.secondary, marginLeft: '56px', margin: 0 }}>Live tracking of assigned fleets</p>
+                        </div>
+                    </SectionHeader>
+
+                    <Grid2Col>
+                        {drivers.filter(d => pickups.some(p => p.driver_id === d.id && p.status === 'pending')).length === 0 ? (
+                            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: theme.colors.text.muted, background: '#F8FAFC', borderRadius: '16px', border: '1px dashed #E2E8F0' }}>
+                                <Truck size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                                <h3 style={{ margin: '0 0 8px 0', color: theme.colors.text.secondary }}>No Active Deployments</h3>
+                                <p style={{ margin: 0, fontSize: '14px' }}>Assign fleets to pending zones to see them here.</p>
+                            </div>
+                        ) : drivers.filter(d => pickups.some(p => p.driver_id === d.id && p.status === 'pending')).map(driver => {
+                            const driverPickups = pickups.filter(p => p.driver_id === driver.id && p.status === 'pending');
+                            // Extract unique zone names
+                            const activeZones = [...new Set(driverPickups.map(p => p.citizens?.division).filter(Boolean))];
+
+                            return (
+                                <CardBase
+                                    key={driver.id}
+                                    style={{ border: '1px solid #E2E8F0', background: 'white', cursor: 'pointer' }}
+                                    onClick={() => {
+                                        setSelectedDeploymentDriver(driver);
+                                        setIsDeploymentModalOpen(true);
+                                    }}
+                                    whileHover={{ y: -4, boxShadow: theme.shadows.cardHover }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: 40, height: 40, borderRadius: '50%', background: theme.colors.primary.light, color: theme.colors.primary.main, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                                {driver.photo_url ? <img src={driver.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }} /> : driver.full_name?.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontWeight: 'bold', fontSize: '16px' }}>{driver.full_name}</h4>
+                                                <span style={{ fontSize: '12px', color: theme.colors.text.secondary }}>{driver.vehicle_number || 'Unassigned Vehicle'}</span>
+                                            </div>
+                                        </div>
+                                        <Badge style={{ background: theme.colors.organic.light, color: theme.colors.organic.text, boxShadow: 'none' }}>
+                                            <Activity size={12} /> In Progress
+                                        </Badge>
+                                    </div>
+                                    <div style={{ background: '#F8FAFC', padding: '12px', borderRadius: '12px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', fontWeight: 'bold' }}>
+                                            <span style={{ color: theme.colors.text.secondary }}>Assigned Pickups</span>
+                                            <span>{driverPickups.length} pending in {activeZones.length} zones</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                            {activeZones.slice(0, 3).map((zone, idx) => (
+                                                <span key={idx} style={{ fontSize: '11px', background: 'white', border: '1px solid #E2E8F0', padding: '4px 8px', borderRadius: '100px' }}>
+                                                    {zone}
+                                                </span>
+                                            ))}
+                                            {activeZones.length > 3 && (
+                                                <span style={{ fontSize: '11px', background: 'white', border: '1px solid #E2E8F0', padding: '4px 8px', borderRadius: '100px', color: theme.colors.text.secondary }}>
+                                                    +{activeZones.length - 3} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </CardBase>
+                            );
+                        })}
+                    </Grid2Col>
+                </StyledSection>
+
                 {/* Weekly Routing */}
                 <StyledSection>
                     <SectionHeader $mb="32px">
@@ -1144,7 +1256,13 @@ const SmartScheduleDashboardStyled = ({
 
                     <CalendarGrid>
                         {days.map((day, idx) => (
-                            <DayCardStyle key={idx} $isSpecial={day.isSpecial} $color={day.color}>
+                            <DayCardStyle
+                                key={idx}
+                                $isSpecial={day.isSpecial}
+                                $color={day.color}
+                                onClick={() => setIsEditModalOpen(true)}
+                                style={{ cursor: 'pointer' }}
+                            >
                                 {day.isActive && (
                                     <div style={{
                                         position: 'absolute', top: '8px', right: '8px',
@@ -1194,9 +1312,21 @@ const SmartScheduleDashboardStyled = ({
             <AnimatePresence>
                 {isEditModalOpen && (
                     <EditScheduleModal
-                        currentSchedule={days}
+                        schedule={days}
+                        isOpen={isEditModalOpen}
                         onClose={() => setIsEditModalOpen(false)}
                         onSave={handleSaveSchedule}
+                    />
+                )}
+                {isDeploymentModalOpen && selectedDeploymentDriver && (
+                    <DeploymentDetailsModal
+                        isOpen={isDeploymentModalOpen}
+                        onClose={() => {
+                            setIsDeploymentModalOpen(false);
+                            setSelectedDeploymentDriver(null);
+                        }}
+                        driver={selectedDeploymentDriver}
+                        initialPickups={pickups.filter(p => p.driver_id === selectedDeploymentDriver.id)}
                     />
                 )}
             </AnimatePresence>

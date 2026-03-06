@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, AppState, AppStateStatus } from 'react-native';
 import MapView from 'react-native-maps';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../../lib/supabase';
-
 
 
 // --- Services & Hooks ---
@@ -26,6 +25,7 @@ const GOOGLE_API_KEY = "AIzaSyAWAwQ3RBtI20uUUGyLwedbqihPvpol3pw";
 export default function DriverHomeScreen() {
     const router = useRouter();
     const mapRef = useRef<MapView>(null);
+    const appState = useRef(AppState.currentState);
 
     // 1. Logic States
     const [hasStarted, setHasStarted] = useState(false);
@@ -46,6 +46,7 @@ export default function DriverHomeScreen() {
     const [chatPickup, setChatPickup] = useState<any>(null);
 
     // 🛰️ CUSTOM HOOK: Handles GPS watching & DB syncing automatically
+    // The hook already handles the 5s update to 'updated_at' in driver_live_location
     const currentLocation = useDriverTracking(driverId, hasStarted);
 
     // 2. Initial Data Load
@@ -67,12 +68,30 @@ export default function DriverHomeScreen() {
         })();
     }, []);
 
+    // 3. Handle App State (Online/Offline Toggle) + Logs
     useEffect(() => {
-        console.log('DEBUG → driverId:', driverId);
-        console.log('DEBUG → currentLocation:', currentLocation);
-    }, [driverId, currentLocation]);
+        const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+            if (!driverId || !hasStarted) return;
 
-    // 3. Camera Follow Logic (Moved from the old watchPosition callback)
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                console.log("📱 App: FOREGROUND (Online)"); // <-- Log added
+                await supabase.from('driver').update({ is_online: true }).eq('id', driverId);
+            } else if (nextAppState.match(/inactive|background/)) {
+                console.log("📱 App: BACKGROUND (Offline)"); // <-- Log added
+                await supabase.from('driver').update({ is_online: false }).eq('id', driverId);
+            }
+
+            appState.current = nextAppState;
+        };
+
+        const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+        return () => {
+            subscription.remove();
+        };
+    }, [driverId, hasStarted]);
+
+    // 4. Camera Follow Logic
     useEffect(() => {
         if (hasStarted && currentLocation && mapRef.current) {
             mapRef.current.animateCamera({
@@ -84,7 +103,7 @@ export default function DriverHomeScreen() {
         }
     }, [currentLocation, isDriverMode, hasStarted]);
 
-    // 4. Helper: Find Nearest
+    // 5. Helper: Find Nearest
     const findNearest = (lat: number, lng: number, list: any[]) => {
         if (list.length === 0) return null;
         return [...list].map(p => ({
@@ -93,12 +112,14 @@ export default function DriverHomeScreen() {
         })).sort((a, b) => a.dist - b.dist)[0];
     };
 
-    // 5. Actions
+    // 6. Actions
     const handleStartRoute = async () => {
         if (!driverId || !currentLocation) {
             Alert.alert("Waiting for GPS", "Please wait for your location to sync.");
             return;
         }
+
+        // Update DB status to Online
         await supabase.from('driver').update({ is_online: true }).eq('id', driverId);
 
         if (pickups.length > 0) {
@@ -111,7 +132,6 @@ export default function DriverHomeScreen() {
     const handlePickupAction = async (compostWt: number, recycleWt: number, status: 'completed' | 'skipped', note?: string) => {
         if (!selectedPickup || !driverId) return;
 
-        // Log the action
         await supabase.from('pickup_logs').insert({
             pickup_id: selectedPickup.id,
             driver_id: driverId,
@@ -125,7 +145,6 @@ export default function DriverHomeScreen() {
             note
         });
 
-        // Update pickup status
         await supabase.from('pickups').update({
             status,
             completed_at: new Date(),
@@ -154,7 +173,6 @@ export default function DriverHomeScreen() {
         <View style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* HEADER BAR */}
             <View style={styles.headerBar}>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => setMessagesVisible(true)}>
                     <Ionicons name="chatbubble-ellipses-outline" size={24} color="#333" />
@@ -167,7 +185,6 @@ export default function DriverHomeScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* REFACTORED MAP SECTION */}
             <MapSection
                 mapRef={mapRef}
                 currentLocation={currentLocation}
@@ -184,7 +201,6 @@ export default function DriverHomeScreen() {
                 apiKey={GOOGLE_API_KEY}
             />
 
-            {/* FLOATING ACTION BUTTON */}
             {hasStarted && (
                 <TouchableOpacity
                     style={styles.viewToggleBtn}
@@ -198,7 +214,6 @@ export default function DriverHomeScreen() {
                 </TouchableOpacity>
             )}
 
-            {/* MODALS */}
             <WelcomeStartModal
                 visible={!hasStarted}
                 driverName={driverName}

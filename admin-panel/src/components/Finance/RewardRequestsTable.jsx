@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Gift, CheckCircle, XCircle, Calendar, Coins } from 'lucide-react';
 import ApprovalModal from './ApprovalModal';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../../lib/supabaseClient';
 
 const Card = styled.div`
   background: white;
@@ -125,18 +126,77 @@ const EmptyState = styled.div`
   color: #94A3B8;
 `;
 
-// Mock Data
-const MOCK_REQUESTS = [
-  { id: 1, citizen: 'Kasun Perera', email: 'kasun@example.com', points: 3500, cash: 3500, requestDate: '2026-01-10', daysActive: 42 },
-  { id: 2, citizen: 'Nimal Silva', email: 'nimal@example.com', points: 2800, cash: 2800, requestDate: '2026-01-15', daysActive: 37 },
-  { id: 3, citizen: 'Amaya Fernando', email: 'amaya@example.com', points: 4200, cash: 4200, requestDate: '2026-01-18', daysActive: 34 }
-];
-
 const RewardRequestsTable = () => {
-  const [requests, setRequests] = useState(MOCK_REQUESTS);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionType, setActionType] = useState(null);
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    try {
+      const { data: requestsData, error: reqError } = await supabase
+        .from('withdrawal_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('requested_at', { ascending: false });
+
+      if (reqError) throw reqError;
+
+      if (!requestsData || requestsData.length === 0) {
+        setRequests([]);
+        setLoading(false);
+        return;
+      }
+
+      const userIds = [...new Set(requestsData.map(r => r.user_id))];
+      const { data: citizensData, error: citError } = await supabase
+        .from('citizens')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (citError) throw citError;
+
+      const citizensMap = {};
+      if (citizensData) {
+        citizensData.forEach(c => {
+          citizensMap[c.id] = c;
+        });
+      }
+
+      const formatted = requestsData.map(req => {
+        const requestDate = new Date(req.requested_at);
+        const daysActive = Math.max(0, Math.floor((new Date() - requestDate) / (1000 * 60 * 60 * 24)));
+        const citizenInfo = citizensMap[req.user_id] || {};
+
+        return {
+          id: req.id,
+          citizen: citizenInfo.full_name || 'Unknown Citizen',
+          email: citizenInfo.email || 'No Email',
+          points: Number(req.amount),
+          cash: Number(req.amount),
+          requestDate: requestDate.toISOString().split('T')[0],
+          daysActive: daysActive,
+          bankName: req.bank_name,
+          accountNumber: req.account_number,
+          accountHolder: req.account_holder_name,
+          branch: req.branch
+        };
+      });
+
+      setRequests(formatted);
+    } catch (error) {
+      console.error('Error fetching withdrawal requests:', error);
+      toast.error('Failed to load reward requests');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAction = (request, type) => {
     setSelectedRequest(request);
@@ -144,16 +204,35 @@ const RewardRequestsTable = () => {
     setModalOpen(true);
   };
 
-  const confirmAction = () => {
-    if (actionType === 'approve') {
-      toast.success(`Approved ${selectedRequest.citizen}'s reward of LKR ${selectedRequest.cash.toLocaleString()}`);
-    } else {
-      toast.error(`Rejected ${selectedRequest.citizen}'s reward request`);
-    }
+  const confirmAction = async (notes = '') => {
+    try {
+      const newStatus = actionType === 'approve' ? 'approved' : 'rejected';
 
-    setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
-    setModalOpen(false);
-    setSelectedRequest(null);
+      const { error } = await supabase
+        .from('withdrawal_requests')
+        .update({
+          status: newStatus,
+          processed_at: new Date().toISOString(),
+          admin_notes: notes
+        })
+        .eq('id', selectedRequest.id);
+
+      if (error) throw error;
+
+      if (actionType === 'approve') {
+        toast.success(`Approved ${selectedRequest.citizen}'s reward of LKR ${selectedRequest.cash.toLocaleString()}`);
+      } else {
+        toast.error(`Rejected ${selectedRequest.citizen}'s reward request`);
+      }
+
+      setRequests(prev => prev.filter(r => r.id !== selectedRequest.id));
+    } catch (error) {
+      console.error(`Error updating request:`, error);
+      toast.error(`Failed to process request`);
+    } finally {
+      setModalOpen(false);
+      setSelectedRequest(null);
+    }
   };
 
   return (

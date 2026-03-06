@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, User, Truck, Radio, CheckCircle2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styled, { css } from 'styled-components';
+import useEscapeKey from '../../hooks/useEscapeKey';
 
 // --- Styled Components ---
 
@@ -41,10 +42,10 @@ const Content = styled(motion.div)`
 
 const Header = styled.div`
     padding: 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #E2E8F0;
     display: flex; justify-content: space-between; align-items: center;
-    background: linear-gradient(to right, #2563EB, #3B82F6);
-    color: white;
+    background: white;
+    color: ${theme.colors.text.primary};
 `;
 
 const SearchSection = styled.div`
@@ -55,7 +56,7 @@ const SearchSection = styled.div`
 `;
 
 const SearchInputWrapper = styled.div`
-position: relative; flex: 1;
+    position: relative; flex: 1;
 `;
 
 const SearchInput = styled.input`
@@ -91,6 +92,7 @@ const FilterButton = styled.button`
     font-size: 13px; font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
 `;
 
 const SearchActionButton = styled.button`
@@ -116,32 +118,38 @@ const SearchActionButton = styled.button`
 `;
 
 const DriverList = styled.div`
-flex: 1; overflow - y: auto;
-padding: 24px;
-display: flex; flex - direction: column; gap: 12px;
+    flex: 1; 
+    overflow-y: auto;
+    padding: 24px;
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px;
 `;
 
 const DriverCardStyled = styled(motion.div)`
-padding: 16px;
-border - radius: ${theme.radius.md};
-border: 1px solid ${props => props.$isSelected ? theme.colors.primary.main : '#F1F5F9'};
-background: ${props => props.$isSelected ? '#EFF6FF' : 'white'};
-cursor: pointer;
-transition: all 0.2s;
-display: flex; align - items: center; justify - content: space - between;
+    padding: 16px;
+    border-radius: ${theme.radius.md};
+    border: 1px solid ${props => props.$isSelected ? theme.colors.primary.main : '#F1F5F9'};
+    background: ${props => props.$isSelected ? '#EFF6FF' : 'white'};
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    width: 100%;
     
     &:hover {
-    border - color: ${props => props.$isSelected ? theme.colors.primary.main : '#CBD5E1'};
-    transform: translateY(-2px);
-    box - shadow: ${theme.shadows.card};
-}
+        border-color: ${props => props.$isSelected ? theme.colors.primary.main : '#CBD5E1'};
+        transform: translateY(-2px);
+        box-shadow: ${theme.shadows.card};
+    }
 `;
 
 const Footer = styled.div`
-padding: 20px 24px;
-border - top: 1px solid #E2E8F0;
-background: white;
-display: flex; gap: 12px; justify - content: flex - end;
+    padding: 20px 24px;
+    border-top: 1px solid #E2E8F0;
+    background: white;
+    display: flex; gap: 12px; justify-content: flex-end;
 `;
 
 const PrimaryButton = styled.button`
@@ -167,46 +175,27 @@ border: 1px solid #E2E8F0; cursor: pointer;
 `;
 
 // Removed CloseButton styled component in favor of inline logic for absolute control
-const CloseButtonWrapper = styled.button`
-background: #F1F5F9;
-border - radius: 50 %;
-width: 36px;
-height: 36px;
-display: flex;
-align - items: center;
-justify - content: center;
-cursor: pointer;
-border: none;
-transition: all 0.2s ease;
-color: #64748B;
-    
-    &:hover {
-    background: #EF4444;
-    color: white;
-    transform: rotate(90deg);
-}
+const CloseButton = styled.button`
+  background: #EF4444;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+
+  &:hover {
+    background: #DC2626;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  }
 `;
 
-// --- Helpers ---
-
-const DriverLoadBar = ({ current = 0, max = 10 }) => {
-    const pct = Math.min((current / max) * 100, 100);
-    let color = '#22C55E'; // green
-    if (pct > 50) color = '#EAB308'; // yellow
-    if (pct > 80) color = '#EF4444'; // red
-
-    return (
-        <div style={{ marginTop: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748B', marginBottom: '4px', fontWeight: 600 }}>
-                <span>LOAD CAPACITY</span>
-                <span>{current}/{max}</span>
-            </div>
-            <div style={{ height: '6px', background: '#F1F5F9', borderRadius: '99px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}% `, background: color, borderRadius: '99px' }} />
-            </div>
-        </div>
-    );
-};
+// Removed DriverLoadBar as requested
 
 // --- Main Component ---
 
@@ -241,14 +230,8 @@ const AssignmentModal = ({ isOpen, onClose, drivers = [], requestIds = [], onAss
         }
     };
 
-    // Close on Escape key
-    React.useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') onClose();
-        };
-        if (isOpen) window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [isOpen, onClose]);
+    // Use Escape key to close
+    useEscapeKey(onClose, isOpen);
 
     if (!isOpen) return null;
 
@@ -262,35 +245,14 @@ const AssignmentModal = ({ isOpen, onClose, drivers = [], requestIds = [], onAss
                 >
                     <Header>
                         <div>
-                            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>Assign Fleet</h2>
-                            <p style={{ margin: 0, opacity: 0.9, fontSize: '14px' }}>
-                                Deploying for {requestIds.length} pending zones
+                            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: theme.colors.text.primary }}>Assign Fleet Node</h2>
+                            <p style={{ margin: 0, color: theme.colors.text.secondary, fontSize: '14px', marginTop: '4px' }}>
+                                Deploying 1 driver for {requestIds.length} pending zones
                             </p>
                         </div>
-                        {/* Reverted to State-Based Control for perfect visibility on Blue Header */}
-                        <button
-                            onClick={onClose}
-                            onMouseEnter={() => setIsCloseHovered(true)}
-                            onMouseLeave={() => setIsCloseHovered(false)}
-                            style={{
-                                background: isCloseHovered ? '#EF4444' : 'rgba(255, 255, 255, 0.2)',
-                                border: '1px solid',
-                                borderColor: isCloseHovered ? '#EF4444' : 'rgba(255, 255, 255, 0.1)',
-                                borderRadius: '12px',
-                                width: '36px', height: '36px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                transform: isCloseHovered ? 'rotate(90deg)' : 'rotate(0deg)'
-                            }}
-                        >
-                            <X
-                                size={20}
-                                strokeWidth={2.5}
-                                color="white"
-                                style={{ stroke: 'white' }}
-                            />
-                        </button>
+                        <CloseButton onClick={onClose}>
+                            <X size={20} strokeWidth={2.5} />
+                        </CloseButton>
                     </Header>
 
                     <SearchSection>
@@ -326,28 +288,40 @@ const AssignmentModal = ({ isOpen, onClose, drivers = [], requestIds = [], onAss
                                 whileHover={{ scale: 1.01 }}
                                 whileTap={{ scale: 0.99 }}
                             >
-                                <div style={{ display: 'flex', gap: '16px', flex: 1 }}>
+                                <div style={{ display: 'flex', gap: '16px', flex: 1, alignItems: 'center' }}>
                                     <div style={{ position: 'relative' }}>
                                         {driver.photo_url ? (
                                             <img src={driver.photo_url} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} />
                                         ) : (
-                                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#E0E7FF', color: '#4F46E5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                                            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#E0E7FF', color: '#4F46E5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '20px' }}>
                                                 {driver.full_name?.charAt(0)}
                                             </div>
                                         )}
-                                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: driver.is_online ? '#22C55E' : '#94A3B8', border: '2px solid white' }} />
+                                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, borderRadius: '50%', background: driver.is_online ? '#22C55E' : '#EF4444', border: '3px solid white' }} />
                                     </div>
 
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <h4 style={{ margin: 0, fontWeight: 'bold', fontSize: '16px' }}>{driver.full_name}</h4>
-                                            {selectedDriverId === driver.id && <CheckCircle2 size={20} color={theme.colors.primary.main} />}
+                                        <h4 style={{ margin: '0 0 4px 0', fontWeight: 'bold', fontSize: '16px', color: theme.colors.text.primary }}>{driver.full_name}</h4>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: theme.colors.text.secondary, fontWeight: 500 }}>
+                                            <span style={{
+                                                color: driver.is_online ? '#15803D' : '#B91C1C',
+                                                background: driver.is_online ? '#DCFCE7' : '#FEE2E2',
+                                                padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold'
+                                            }}>
+                                                {driver.is_online ? 'Available' : 'Not Available'}
+                                            </span>
+                                            <span>•</span>
+                                            <Truck size={14} />
+                                            <span>{driver.vehicle_number || 'Unassigned Vehicle'}</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-                                            <Truck size={12} />
-                                            <span>{driver.vehicle_number || 'No Vehicle'}</span>
-                                        </div>
-                                        <DriverLoadBar current={driver.current_load} />
+                                    </div>
+
+                                    <div>
+                                        {selectedDriverId === driver.id && (
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                                <CheckCircle2 size={24} color={theme.colors.primary.main} />
+                                            </motion.div>
+                                        )}
                                     </div>
                                 </div>
                             </DriverCardStyled>

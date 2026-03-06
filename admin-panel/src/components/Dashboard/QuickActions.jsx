@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FileText, Phone } from 'lucide-react';
+import { FileText, Phone, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import DriverContactModal from './DriverContactModal';
+import ReportTemplate from './ReportTemplate';
+import { generateOperationalReportData } from '../../services/ReportService';
 
 const Container = styled.div`
   background: white;
@@ -44,10 +46,38 @@ const Label = styled.span`
 
 const QuickActions = () => {
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleExportReport = async () => {
+    setIsGenerating(true);
+    const id = toast.loading('Generating operational report...');
+
+    try {
+      const data = await generateOperationalReportData();
+      setReportData(data);
+
+      // Tabular reports render instantly, minimal timeout for DOM sync
+      setTimeout(() => {
+        window.print();
+        toast.success('Report generated successfully', { id });
+        setIsGenerating(false);
+      }, 600);
+
+    } catch (error) {
+      console.error('Report generation failed:', error);
+      toast.error('Failed to generate report', { id });
+      setIsGenerating(false);
+    }
+  };
 
   const handleAction = (action) => {
     if (action === 'Contact Drivers') {
       setIsContactOpen(true);
+      return;
+    }
+    if (action === 'Export Report') {
+      handleExportReport();
       return;
     }
     toast.success(`Action triggered: ${action}`);
@@ -57,9 +87,13 @@ const QuickActions = () => {
     <Container>
       <Title>Quick Actions</Title>
       <Grid>
-        <ActionButton onClick={() => handleAction('Export Report')}>
-          <FileText size={20} color="#3B82F6" />
-          <Label>Report</Label>
+        <ActionButton onClick={() => handleAction('Export Report')} disabled={isGenerating}>
+          {isGenerating ? (
+            <Loader2 size={20} color="#3B82F6" className="animate-spin" />
+          ) : (
+            <FileText size={20} color="#3B82F6" />
+          )}
+          <Label>{isGenerating ? 'Wait...' : 'Report'}</Label>
         </ActionButton>
         <ActionButton onClick={() => handleAction('Contact Drivers')}>
           <Phone size={20} color="#22C55E" />
@@ -71,6 +105,8 @@ const QuickActions = () => {
         isOpen={isContactOpen}
         onClose={() => setIsContactOpen(false)}
       />
+
+      <ReportTemplate data={reportData} />
     </Container>
   );
 };
