@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle, CheckCircle, XCircle, Wallet, CreditCard, Smartphone } from 'lucide-react';
 import { PayPalButtons } from "@paypal/react-paypal-js";
 import useEscapeKey from '../../hooks/useEscapeKey';
+import visaLogo from '../../assets/visa_logo.png';
+import helakuruLogo from '../../assets/helakuru_logo.png';
 
 const Overlay = styled(motion.div)`
   position: fixed;
@@ -374,13 +376,13 @@ const ApprovalModal = ({ isOpen, onClose, onConfirm, request, actionType }) => {
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'card'} $method="card" onClick={() => setPaymentMethod('card')}>
                   <MethodIconContainer>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" />
+                    <img src={visaLogo} alt="Visa" />
                   </MethodIconContainer>
                   <MethodLabel $active={paymentMethod === 'card'} $method="card">Visa/Card</MethodLabel>
                 </MethodCard>
                 <MethodCard $active={paymentMethod === 'helakuru'} $method="helakuru" onClick={() => setPaymentMethod('helakuru')}>
                   <MethodIconContainer>
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/2/22/Helakuru_logo.png" alt="Helakuru" />
+                    <img src={helakuruLogo} alt="Helakuru" />
                   </MethodIconContainer>
                   <MethodLabel $active={paymentMethod === 'helakuru'} $method="helakuru">Helakuru</MethodLabel>
                 </MethodCard>
