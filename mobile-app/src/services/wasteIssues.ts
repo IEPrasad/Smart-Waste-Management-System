@@ -1,5 +1,46 @@
 import { supabase } from '@/lib/supabase';
 
+// ── Photo upload ──────────────────────────────────────────────────────────────
+export async function uploadIssuePhoto(
+  localUri: string,
+  citizenId: string
+): Promise<{ url: string | null; error: string | null }> {
+  try {
+    // Derive extension from the URI itself (most reliable on Android)
+    const uriLower = localUri.toLowerCase();
+    const ext = uriLower.includes('.png') ? 'png' : 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const filename = `${citizenId}/${Date.now()}.${ext}`;
+
+    // Use FormData — React Native handles local file:// and content:// URIs
+    const formData = new FormData();
+    formData.append('file', {
+      uri: localUri,
+      name: `photo.${ext}`,
+      type: mimeType,
+    } as any);
+
+    const { error: uploadError } = await supabase.storage
+      .from('issue-photos')
+      .upload(filename, formData, {
+        contentType: mimeType,
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('issue-photos')
+      .getPublicUrl(filename);
+
+    return { url: data.publicUrl, error: null };
+  } catch (err) {
+    const msg =
+      err instanceof Error ? err.message : 'Failed to upload photo';
+    return { url: null, error: msg };
+  }
+}
+
 export type WasteIssueType =
   | 'missed-pickup'
   | 'damaged-bin'

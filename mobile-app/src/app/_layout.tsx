@@ -50,6 +50,15 @@ export default function RootLayout() {
           options={{ headerShown: false }}
         />
         <Stack.Screen name="citizen/index" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/user-home" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/user-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/report-issue" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/sort-trash" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/schedule-pickup" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/wallet" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/messages" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/reward-history" options={{ headerShown: false }} />
+        <Stack.Screen name="citizen/modal" options={{ headerShown: false }} />
         <Stack.Screen name="driver" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"

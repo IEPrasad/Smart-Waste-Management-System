@@ -5,10 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  ScrollView,
+  Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { supabase } from '@/lib/supabase';
 import {
@@ -17,6 +19,25 @@ import {
   estimateArrivalTime,
 } from '@/services/pickupTracking';
 import type { ActivePickup } from '@/services/pickupTracking';
+import { UserProfileService } from '@/services/userProfileService';
+
+// ── Quick action definitions ─────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  {
+    id: 'schedule',
+    label: 'Schedule Pickup',
+    icon: 'calendar' as const,
+    route: '/citizen/schedule-pickup',
+    gradient: ['#065F46', '#059669'] as [string, string],
+  },
+  {
+    id: 'sort',
+    label: 'Sort Trash',
+    icon: 'leaf' as const,
+    route: '/citizen/sort-trash',
+    gradient: ['#047857', '#10B981'] as [string, string],
+  },
+];
 
 export default function UserHomeScreen() {
   const router = useRouter();
@@ -25,32 +46,39 @@ export default function UserHomeScreen() {
   const [distance, setDistance] = useState<number | null>(null);
   const [eta, setEta] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     fetchActivePickup();
-    // Refresh every 30 seconds
+    fetchUserAvatar();
     const interval = setInterval(fetchActivePickup, 30000);
     return () => clearInterval(interval);
   }, []);
 
+  const fetchUserAvatar = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await UserProfileService.getCitizenProfile(user.id);
+      if (data?.avatar_url) setAvatarUrl(data.avatar_url);
+      if (data?.full_name) setUserName(data.full_name.split(' ')[0]);
+    } catch {
+      // silently ignore — fallback icon will show
+    }
+  };
+
   const fetchActivePickup = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data, error } = await getActivePickup(user.id);
-
-      if (error) {
-        console.log('No active pickup:', error);
-      }
+      if (error) console.log('No active pickup:', error);
 
       if (data && data.user_location && data.driver_location) {
         setActivePickup(data);
-
-        // Calculate distance and ETA
         const dist = calculateDistance(
           data.user_location.latitude,
           data.user_location.longitude,
@@ -60,23 +88,13 @@ export default function UserHomeScreen() {
         setDistance(dist);
         setEta(estimateArrivalTime(dist));
 
-        // Fit map to show both markers
         if (mapRef.current) {
           mapRef.current.fitToCoordinates(
             [
-              {
-                latitude: data.user_location.latitude,
-                longitude: data.user_location.longitude,
-              },
-              {
-                latitude: data.driver_location.lat,
-                longitude: data.driver_location.lng,
-              },
+              { latitude: data.user_location.latitude, longitude: data.user_location.longitude },
+              { latitude: data.driver_location.lat, longitude: data.driver_location.lng },
             ],
-            {
-              edgePadding: { top: 50, right: 50, bottom: 50, left: 50 },
-              animated: true,
-            }
+            { edgePadding: { top: 40, right: 40, bottom: 40, left: 40 }, animated: true }
           );
         }
       } else {
@@ -91,37 +109,43 @@ export default function UserHomeScreen() {
     }
   };
 
-  useEffect(() => {
-    router.setParams({ headerShown: 'false' });
-  }, []);
+  const hasActivePickup = activePickup && distance !== null && eta !== null;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.welcomeText}>Welcome, User</Text>
-          <Text style={styles.subtitleText}>Your waste pickup assistant</Text>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#065F46" />
+
+      {/* ── Gradient Header ── */}
+      <LinearGradient colors={['#065F46', '#059669']} style={styles.header}>
+        <View style={styles.headerDecorCircle} />
+        <View style={styles.headerLeft}>
+          <Text style={styles.welcomeLabel}>Good day{userName ? `, ${userName}` : ''} 👋</Text>
+          <Text style={styles.welcomeTitle}>WasteWise</Text>
+          <Text style={styles.welcomeSub}>Your waste pickup assistant</Text>
         </View>
-        
-        {/* Profile Picture */}
-        <TouchableOpacity 
-          style={styles.profileButton}
+        <TouchableOpacity
+          style={styles.profileBtn}
           onPress={() => router.push('/citizen/user-profile')}
+          activeOpacity={0.8}
         >
           <View style={styles.profileCircle}>
-            <Ionicons name="person" size={24} color="#10B981" />
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <Ionicons name="person" size={24} color="#059669" />
+            )}
           </View>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
-      <ScrollView 
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Map Card with Google Maps */}
+      {/* ── Body (no scroll — flex fills remaining space) ── */}
+      <View style={styles.body}>
+
+
+        {/* ── Map Card ── */}
         <View style={styles.mapCard}>
           <MapView
             ref={mapRef}
@@ -134,128 +158,85 @@ export default function UserHomeScreen() {
               longitudeDelta: 0.02,
             }}
           >
-            {/* User location marker */}
             {activePickup?.user_location && (
               <Marker
-                coordinate={{
-                  latitude: activePickup.user_location.latitude,
-                  longitude: activePickup.user_location.longitude,
-                }}
+                coordinate={{ latitude: activePickup.user_location.latitude, longitude: activePickup.user_location.longitude }}
                 title="Your Location"
                 pinColor="#EF4444"
               />
             )}
-
-            {/* Driver location marker */}
             {activePickup?.driver_location && (
               <Marker
-                coordinate={{
-                  latitude: activePickup.driver_location.lat,
-                  longitude: activePickup.driver_location.lng,
-                }}
+                coordinate={{ latitude: activePickup.driver_location.lat, longitude: activePickup.driver_location.lng }}
                 title="Driver"
                 description="Waste collection vehicle"
-                pinColor="#3B82F6"
+                pinColor="#2563EB"
               >
                 <View style={styles.driverMarker}>
-                  <Ionicons name="car" size={24} color="#FFFFFF" />
+                  <Ionicons name="car" size={20} color="#FFFFFF" />
                 </View>
               </Marker>
             )}
-
-            {/* Blue route line between user and driver */}
             {activePickup?.user_location && activePickup?.driver_location && (
               <Polyline
                 coordinates={[
-                  {
-                    latitude: activePickup.user_location.latitude,
-                    longitude: activePickup.user_location.longitude,
-                  },
-                  {
-                    latitude: activePickup.driver_location.lat,
-                    longitude: activePickup.driver_location.lng,
-                  },
+                  { latitude: activePickup.user_location.latitude, longitude: activePickup.user_location.longitude },
+                  { latitude: activePickup.driver_location.lat, longitude: activePickup.driver_location.lng },
                 ]}
-                strokeColor="#3B82F6"
+                strokeColor="#2563EB"
                 strokeWidth={4}
               />
             )}
           </MapView>
+
         </View>
 
-        {/* Live Tracking Card */}
-        <View style={styles.trackingCard}>
-          <Text style={styles.trackingTitle}>Live Tracking</Text>
-          {activePickup && distance !== null && eta !== null ? (
-            <Text style={styles.trackingSubtitle}>
-              Tractor is {distance.toFixed(1)} km away, arriving in {eta} minutes
-            </Text>
-          ) : (
-            <Text style={styles.trackingSubtitle}>No active pickup scheduled</Text>
-          )}
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-          
-          <View style={styles.actionButtonsRow}>
-            {/* Schedule Pickup */}
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => router.push('/citizen/schedule-pickup')}
-            >
-              <View style={[styles.actionIconCircle, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="calendar" size={26} color="#10B981" />
-              </View>
-              <Text style={styles.actionButtonText}>Schedule Pickup</Text>
-            </TouchableOpacity>
-
-            {/* Sort Trash */}
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => router.push('/citizen/sort-trash')}
-            >
-              <View style={[styles.actionIconCircle, { backgroundColor: '#D1FAE5' }]}>
-                <Ionicons name="leaf" size={26} color="#10B981" />
-              </View>
-              <Text style={styles.actionButtonText}>Sort Trash</Text>
-            </TouchableOpacity>
+        {/* ── Quick Actions ── */}
+        <View style={styles.actionsRow}>
+          <View style={styles.actionsGrid}>
+            {QUICK_ACTIONS.map(action => (
+              <TouchableOpacity
+                key={action.id}
+                style={styles.actionCard}
+                onPress={() => router.push(action.route as any)}
+                activeOpacity={0.82}
+              >
+                <LinearGradient
+                  colors={action.gradient}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={styles.actionIconGradient}
+                >
+                  <Ionicons name={action.icon} size={28} color="#fff" />
+                </LinearGradient>
+                <Text style={styles.actionLabel}>{action.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        {/* Bottom Spacing */}
-        <View style={{ height: 20 }} />
-      </ScrollView>
+      </View>
 
-      {/* Bottom Navigation */}
+      {/* ── Bottom Navigation ── */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={28} color="#10B981" />
+        <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
+          <View style={styles.navActivePill}>
+            <Ionicons name="home" size={22} color="#059669" />
+          </View>
           <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push('/citizen/report-issue')}
-        >
-          <Ionicons name="information-circle-outline" size={28} color="#9CA3AF" />
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/citizen/report-issue')} activeOpacity={0.7}>
+          <Ionicons name="information-circle-outline" size={26} color="#9CA3AF" />
           <Text style={styles.navText}>Report</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push('/citizen/reward-history')}
-        >
-          <Ionicons name="person-outline" size={28} color="#9CA3AF" />
-          <Text style={styles.navText}>Reward History</Text>
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/citizen/reward-history')} activeOpacity={0.7}>
+          <Ionicons name="gift-outline" size={26} color="#9CA3AF" />
+          <Text style={styles.navText}>Rewards</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.navItem}
-          onPress={() => router.push('/citizen/messages')}
-        >
-          <Ionicons name="mail-outline" size={28} color="#9CA3AF" />
+        <TouchableOpacity style={styles.navItem} onPress={() => router.push('/citizen/messages')} activeOpacity={0.7}>
+          <Ionicons name="chatbubble-ellipses-outline" size={26} color="#9CA3AF" />
           <Text style={styles.navText}>Messages</Text>
         </TouchableOpacity>
       </View>
@@ -264,168 +245,115 @@ export default function UserHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
+  root: { flex: 1, backgroundColor: '#F3F4F6' },
+
+  // ── Header ────────────────────────────────────────────────────────────────
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  subtitleText: {
-    fontSize: 18,
-    color: '#6B7280',
-    fontWeight: '400',
-  },
-  profileButton: {
-    marginLeft: 12,
-  },
-  profileCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#D1FAE5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#10B981',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  mapCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
-    height: 325,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 48 : (StatusBar.currentHeight ?? 24) + 8,
+    paddingBottom: 14,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
   },
-  map: {
-    width: '100%',
-    height: '100%',
+  headerDecorCircle: {
+    position: 'absolute',
+    width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    top: -60, right: -30,
   },
-  trackingCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: -50,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    zIndex: 5,
+  headerLeft: { flex: 1 },
+  welcomeLabel: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '500', marginBottom: 1 },
+  welcomeTitle: { fontSize: 24, fontWeight: '800', color: '#fff', letterSpacing: 0.2, marginBottom: 1 },
+  welcomeSub: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: '400' },
+
+  profileBtn: { marginLeft: 12 },
+  profileCircle: {
+    width: 70, height: 70, borderRadius: 35,
+    backgroundColor: '#fff',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12, shadowRadius: 4, elevation: 4,
+    overflow: 'hidden',
   },
-  trackingTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 6,
+  profileImage: {
+    width: 70, height: 70, borderRadius: 35,
   },
-  trackingSubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-  },
-  quickActionsContainer: {
-    marginHorizontal: 20,
-    marginTop: 32,
-  },
-  quickActionsTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 12,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
+
+  // ── Body ──────────────────────────────────────────────────────────────────
+  body: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    marginHorizontal: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  actionIconCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+
+  // ── Map Card ──────────────────────────────────────────────────────────────
+  mapCard: {
+    flex: 1,
+    borderRadius: 18,
+    overflow: 'hidden', marginBottom: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09, shadowRadius: 8, elevation: 4,
   },
-  actionButtonText: {
-    fontSize: 15.2,
-    fontWeight: '600',
-    color: '#111827',
-    textAlign: 'center',
+  map: { width: '100%', height: '100%' },
+  mapLabel: {
+    position: 'absolute', bottom: 10, left: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 9, paddingVertical: 4,
+    borderRadius: 20,
   },
+  mapLabelText: { fontSize: 12, fontWeight: '600', color: '#111827' },
+
+  driverMarker: {
+    backgroundColor: '#2563EB',
+    padding: 7, borderRadius: 18,
+    borderWidth: 2.5, borderColor: '#fff',
+  },
+
+  // ── Quick Actions ─────────────────────────────────────────────────────────
+  actionsRow: { marginBottom: 4 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 8 },
+  actionsGrid: { flexDirection: 'row', gap: 12 },
+  actionCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16, padding: 16,
+    alignItems: 'center', flexDirection: 'column',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 5, elevation: 2,
+  },
+  actionIconGradient: {
+    width: 58, height: 58, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  actionLabel: {
+    fontSize: 15, fontWeight: '700', color: '#111827',
+    textAlign: 'center', marginTop: 10,
+  },
+
+  // ── Bottom Nav ────────────────────────────────────────────────────────────
   bottomNav: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 12,
-    paddingBottom: 40,
+    backgroundColor: '#fff',
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 28,
     paddingHorizontal: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 8,
+    borderTopWidth: 1, borderTopColor: '#F3F4F6',
+    shadowColor: '#000', shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06, shadowRadius: 8, elevation: 8,
   },
   navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    position: 'relative',
+    flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 4,
   },
-  navText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 4,
-    fontWeight: '500',
+  navActivePill: {
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 14, paddingVertical: 5,
+    borderRadius: 20, marginBottom: 2,
   },
-  navTextActive: {
-    color: '#10B981',
-    fontWeight: '600',
-  },
-  driverMarker: {
-    backgroundColor: '#3B82F6',
-    padding: 8,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
+  navText: { fontSize: 11, color: '#9CA3AF', marginTop: 3, fontWeight: '500' },
+  navTextActive: { color: '#059669', fontWeight: '700' },
 });

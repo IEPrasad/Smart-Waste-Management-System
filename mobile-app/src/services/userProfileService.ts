@@ -1,5 +1,56 @@
 import { supabase } from '@/lib/supabase';
 
+// ── Avatar / profile photo upload ────────────────────────────────────────────
+export async function uploadAvatarPhoto(
+  localUri: string,
+  userId: string
+): Promise<{ url: string | null; error: string | null }> {
+  try {
+    const uriLower = localUri.toLowerCase();
+    const ext = uriLower.includes('.png') ? 'png' : 'jpg';
+    const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const filename = `${userId}/avatar.${ext}`;
+
+    const formData = new FormData();
+    formData.append('file', {
+      uri: localUri,
+      name: `avatar.${ext}`,
+      type: mimeType,
+    } as any);
+
+    // Remove old avatar first (upsert isn't reliable across extensions)
+    await supabase.storage.from('citizen_photos').remove([filename]);
+
+    const { error: uploadError } = await supabase.storage
+      .from('citizen_photos')
+      .upload(filename, formData, { contentType: mimeType, upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('citizen_photos')
+      .getPublicUrl(filename);
+
+    // Bust the CDN cache by appending a timestamp
+    const bustUrl = `${data.publicUrl}?t=${Date.now()}`;
+    return { url: bustUrl, error: null };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to upload avatar';
+    return { url: null, error: msg };
+  }
+}
+
+export async function updateAvatarUrl(
+  userId: string,
+  avatarUrl: string
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('citizens')
+    .update({ avatar_url: avatarUrl })
+    .eq('id', userId);
+  return { error: error ? error.message : null };
+}
+
 export interface CitizenProfile {
   id: string;
   full_name: string;
@@ -13,6 +64,7 @@ export interface CitizenProfile {
   longitude: number | null;
   account_status: string;
   created_at: string;
+  avatar_url?: string | null;
 }
 
 export interface UpdateProfileData {

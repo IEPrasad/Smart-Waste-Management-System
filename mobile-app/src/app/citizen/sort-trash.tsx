@@ -9,9 +9,11 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   getPickupHistory,
   getWasteSummary,
@@ -19,48 +21,43 @@ import {
 } from '@/services/pickupHistoryService';
 import type { PickupHistoryItem, WasteSummary } from '@/services/pickupHistoryService';
 
+type Category = 'compost' | 'recycling';
+
+const CAT_CONFIG: Record<Category, {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  color: string;
+  bg: string;
+  gradientColors: [string, string];
+}> = {
+  compost: { icon: 'leaf', label: 'Compost', color: '#059669', bg: '#D1FAE5', gradientColors: ['#065F46', '#047857'] },
+  recycling: { icon: 'sync', label: 'Recycling', color: '#0369A1', bg: '#DBEAFE', gradientColors: ['#1E3A5F', '#1D4ED8'] },
+};
+
 export default function SortTrashScreen() {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<'compost' | 'recycling'>('compost');
+  const [selectedCategory, setSelectedCategory] = useState<Category>('compost');
   const [pickupHistory, setPickupHistory] = useState<PickupHistoryItem[]>([]);
   const [wasteSummary, setWasteSummary] = useState<WasteSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
       setLoading(true);
-
-      // Get current user ID
       const userId = await getCurrentUserId();
-      if (!userId) {
-        Alert.alert('Error', 'User not found. Please log in again.');
-        return;
-      }
+      if (!userId) { Alert.alert('Error', 'Please log in again.'); return; }
 
-      // Load pickup history and waste summary
-      const [historyResponse, summaryResponse] = await Promise.all([
+      const [histRes, sumRes] = await Promise.all([
         getPickupHistory(userId),
         getWasteSummary(userId),
       ]);
 
-      if (historyResponse.error) {
-        console.error('Error loading history:', historyResponse.error);
-      } else if (historyResponse.data) {
-        setPickupHistory(historyResponse.data);
-      }
-
-      if (summaryResponse.error) {
-        console.error('Error loading summary:', summaryResponse.error);
-      } else if (summaryResponse.data) {
-        setWasteSummary(summaryResponse.data);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
+      if (histRes.data) setPickupHistory(histRes.data);
+      if (sumRes.data) setWasteSummary(sumRes.data);
+    } catch {
       Alert.alert('Error', 'Failed to load pickup history');
     } finally {
       setLoading(false);
@@ -68,193 +65,204 @@ export default function SortTrashScreen() {
     }
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadData();
-  };
+  const onRefresh = () => { setRefreshing(true); loadData(); };
 
   const handleHelp = () => {
     Alert.alert(
-      'Sorting Help',
+      '♻️ Sorting Guide',
       'Compost: Food waste, vegetable scraps, coffee grounds, yard waste\n\nRecycling: Plastic bottles, paper, cardboard, metal cans, glass'
     );
   };
 
-  const filteredItems = pickupHistory.filter((item) => {
-    if (selectedCategory === 'compost') {
-      return item.compost_weight > 0;
-    } else {
-      return item.recycling_weight > 0;
-    }
-  });
+  const filteredItems = pickupHistory.filter(item =>
+    selectedCategory === 'compost' ? item.compost_weight > 0 : item.recycling_weight > 0
+  );
 
-  // Total combined weight (compost + recycling)
-  const totalCombinedWeight = wasteSummary?.total_overall || 0;
+  const totalCombinedWeight = wasteSummary?.total_overall ?? 0;
+  const cfg = CAT_CONFIG[selectedCategory];
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
+      <View style={styles.loadingWrap}>
         <ActivityIndicator size="large" color="#10B981" />
-        <Text style={styles.loadingText}>Loading history...</Text>
+        <Text style={styles.loadingText}>Loading history…</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" backgroundColor="#065F46" />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000000" />
+      {/* ── Gradient header ── */}
+      <LinearGradient colors={cfg.gradientColors} style={styles.headerGradient}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Waste History</Text>
-        <TouchableOpacity style={styles.helpButton} onPress={handleHelp}>
-          <Ionicons name="help-circle" size={28} color="#6B7280" />
+        <TouchableOpacity onPress={handleHelp} style={styles.helpBtn}>
+          <Ionicons name="help-circle-outline" size={24} color="rgba(255,255,255,0.85)" />
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
 
       <ScrollView
-        style={styles.scrollView}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#10B981']} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
+            colors={[cfg.color]} tintColor={cfg.color} />
         }
       >
-        {/* Total Weight Card - Shows Combined Total */}
-        <View style={styles.weightCard}>
-          <Text style={styles.weightLabel}>Total Waste Weight</Text>
-          <Text style={styles.weightValue}>{totalCombinedWeight.toFixed(0)} g</Text>
-          <Text style={styles.weightSubtext}>
-            From {wasteSummary?.pickup_count || 0} completed pickups
-          </Text>
-        </View>
+        {/* ── Hero stats card ── */}
+        <LinearGradient
+          colors={cfg.gradientColors}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={styles.heroCard}
+        >
+          <View style={styles.heroDecorCircle} />
 
-        {/* Category Tabs */}
-        <View style={styles.tabContainer}>
-          <TouchableOpacity
-            style={[styles.tab, selectedCategory === 'compost' && styles.tabActive]}
-            onPress={() => setSelectedCategory('compost')}
-          >
-            <Ionicons
-              name="leaf"
-              size={20}
-              color={selectedCategory === 'compost' ? '#10B981' : '#6B7280'}
-            />
-            <Text
-              style={[styles.tabText, selectedCategory === 'compost' && styles.tabTextActive]}
-            >
-              Compost
-            </Text>
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>
-                {wasteSummary?.total_compost.toFixed(0) || '0'}g
-              </Text>
+          <View style={styles.heroTop}>
+            <View style={styles.heroIconBox}>
+              <Ionicons name={cfg.icon} size={22} color="#fff" />
             </View>
-          </TouchableOpacity>
+            <Text style={styles.heroTopLabel}>Total Waste Weight</Text>
+          </View>
 
-          <TouchableOpacity
-            style={[styles.tab, selectedCategory === 'recycling' && styles.tabActive]}
-            onPress={() => setSelectedCategory('recycling')}
-          >
-            <Ionicons
-              name="sync"
-              size={20}
-              color={selectedCategory === 'recycling' ? '#10B981' : '#6B7280'}
-            />
-            <Text
-              style={[styles.tabText, selectedCategory === 'recycling' && styles.tabTextActive]}
-            >
-              Recycling
-            </Text>
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>
-                {wasteSummary?.total_recycling.toFixed(0) || '0'}g
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+          <Text style={styles.heroValue}>{totalCombinedWeight.toFixed(0)} g</Text>
 
-        {/* Pickup History List */}
-        <View style={styles.itemsList}>
-          {filteredItems.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons
-                name={selectedCategory === 'compost' ? 'leaf-outline' : 'sync-outline'}
-                size={64}
-                color="#D1D5DB"
-              />
-              <Text style={styles.emptyStateText}>No {selectedCategory} waste collected yet</Text>
-              <Text style={styles.emptyStateSubtext}>
-                Your waste collection history will appear here
-              </Text>
+          <View style={styles.statsStrip}>
+            <View style={styles.statItem}>
+              <Text style={styles.statVal}>{(wasteSummary?.total_compost ?? 0).toFixed(0)} g</Text>
+              <Text style={styles.statLbl}>Compost</Text>
             </View>
-          ) : (
-            filteredItems.map((item) => {
-              const isCompleted = item.status === 'completed';
-              const borderColor = isCompleted ? '#10B981' : '#EF4444';
-              
-              return (
-              <View key={item.id} style={[styles.itemCard, { borderLeftColor: borderColor }]}>
-                <View
-                  style={[
-                    styles.itemIcon,
-                    item.status === 'skipped' && styles.itemIconSkipped,
-                  ]}
-                >
-                  <Ionicons
-                    name={selectedCategory === 'compost' ? 'leaf' : 'sync'}
-                    size={32}
-                    color={item.status === 'skipped' ? '#EF4444' : '#10B981'}
-                  />
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statVal}>{(wasteSummary?.total_recycling ?? 0).toFixed(0)} g</Text>
+              <Text style={styles.statLbl}>Recycling</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statVal}>{wasteSummary?.pickup_count ?? 0}</Text>
+              <Text style={styles.statLbl}>Pickups</Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* ── Category tabs ── */}
+        <View style={styles.tabRow}>
+          {(Object.entries(CAT_CONFIG) as [Category, typeof CAT_CONFIG[Category]][]).map(([key, c]) => {
+            const active = selectedCategory === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.tab, active && { backgroundColor: c.bg, borderColor: c.color }]}
+                onPress={() => setSelectedCategory(key)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.tabIconWrap, active && { backgroundColor: c.color }]}>
+                  <Ionicons name={c.icon} size={16} color={active ? '#fff' : '#6B7280'} />
                 </View>
-                <View style={styles.itemDetails}>
-                  <View style={styles.itemHeader}>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        item.status === 'skipped' && styles.statusBadgeSkipped,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusText,
-                          item.status === 'skipped' && styles.statusTextSkipped,
-                        ]}
-                      >
-                        {item.status === 'completed' ? 'Collected' : 'Skipped'}
+                <View>
+                  <Text style={[styles.tabLabel, active && { color: c.color }]}>{c.label}</Text>
+                  <Text style={[styles.tabWeight, active && { color: c.color }]}>
+                    {key === 'compost'
+                      ? (wasteSummary?.total_compost ?? 0).toFixed(0)
+                      : (wasteSummary?.total_recycling ?? 0).toFixed(0)} g
+                  </Text>
+                </View>
+                {active && (
+                  <View style={[styles.tabActiveDot, { backgroundColor: c.color }]} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* ── List header ── */}
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>Pickup Records</Text>
+          <View style={[styles.countPill, { backgroundColor: cfg.bg }]}>
+            <Text style={[styles.countText, { color: cfg.color }]}>{filteredItems.length}</Text>
+          </View>
+        </View>
+
+        {/* ── Empty state ── */}
+        {filteredItems.length === 0 ? (
+          <View style={styles.emptyWrap}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: cfg.bg }]}>
+              <Ionicons name={cfg.icon === 'leaf' ? 'leaf-outline' : 'sync-outline'} size={36} color={cfg.color} />
+            </View>
+            <Text style={styles.emptyTitle}>No {cfg.label} Records Yet</Text>
+            <Text style={styles.emptySub}>Your {cfg.label.toLowerCase()} pickup history will appear here</Text>
+          </View>
+        ) : (
+          filteredItems.map(item => {
+            const done = item.status === 'completed';
+            const accent = done ? cfg.color : '#DC2626';
+            const iconBg = done ? cfg.bg : '#FEE2E2';
+            const weight = selectedCategory === 'compost' ? item.compost_weight : item.recycling_weight;
+
+            return (
+              <View key={item.id} style={styles.itemCard}>
+                {/* Left accent bar */}
+                <View style={[styles.itemAccent, { backgroundColor: accent }]} />
+
+                {/* Category icon */}
+                <View style={[styles.itemIconWrap, { backgroundColor: iconBg }]}>
+                  <Ionicons name={cfg.icon} size={22} color={accent} />
+                </View>
+
+                <View style={styles.itemBody}>
+                  {/* Top row: weight + status */}
+                  <View style={styles.itemTopRow}>
+                    <View style={styles.itemWeightRow}>
+                      <Ionicons name="scale-outline" size={15} color={accent} />
+                      <Text style={[styles.itemWeight, { color: accent }]}>
+                        {weight.toFixed(0)} g
+                      </Text>
+                    </View>
+                    <View style={[styles.statusPill, { backgroundColor: done ? cfg.bg : '#FEE2E2' }]}>
+                      <Ionicons
+                        name={done ? 'checkmark-circle' : 'close-circle'}
+                        size={13} color={accent}
+                      />
+                      <Text style={[styles.statusPillText, { color: accent }]}>
+                        {done ? 'Collected' : 'Skipped'}
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.itemDateTime}>
-                    {item.collected_date} • {item.collected_time}
-                  </Text>
-                  <View style={styles.itemWeight}>
-                    <Ionicons name="scale-outline" size={16} color="#10B981" />
-                    <Text style={styles.itemWeightText}>
-                      {selectedCategory === 'compost'
-                        ? item.compost_weight.toFixed(0)
-                        : item.recycling_weight.toFixed(0)}{' '}
-                      g
-                    </Text>
+
+                  {/* Date / time */}
+                  <View style={styles.itemMetaRow}>
+                    <View style={styles.itemMetaItem}>
+                      <Ionicons name="calendar-outline" size={12} color="#9CA3AF" />
+                      <Text style={styles.itemMetaText}>{item.collected_date}</Text>
+                    </View>
+                    <View style={styles.itemMetaItem}>
+                      <Ionicons name="time-outline" size={12} color="#9CA3AF" />
+                      <Text style={styles.itemMetaText}>{item.collected_time}</Text>
+                    </View>
                   </View>
-                  <View style={styles.driverInfo}>
-                    <Ionicons name="person-outline" size={14} color="#6B7280" />
-                    <Text style={styles.driverText}>Driver: {item.driver_name}</Text>
+
+                  {/* Driver */}
+                  <View style={styles.itemDriverRow}>
+                    <Ionicons name="person-outline" size={13} color="#6B7280" />
+                    <Text style={styles.itemDriverText}>{item.driver_name}</Text>
                   </View>
+
+                  {/* Note */}
                   {item.note && (
-                    <View style={styles.noteContainer}>
-                      <Ionicons name="information-circle-outline" size={14} color="#6B7280" />
+                    <View style={styles.noteBox}>
+                      <Ionicons name="chatbox-outline" size={13} color="#92400E" />
                       <Text style={styles.noteText}>{item.note}</Text>
                     </View>
                   )}
                 </View>
               </View>
-              );
-            })
-          )}
-        </View>
+            );
+          })
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -263,226 +271,115 @@ export default function SortTrashScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    color: '#6B7280',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  root: { flex: 1, backgroundColor: '#F3F4F6' },
+
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F4F6' },
+  loadingText: { marginTop: 12, fontSize: 14, color: '#6B7280' },
+
+  // Header
+  headerGradient: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    paddingTop: Platform.OS === 'ios' ? 52 : (StatusBar.currentHeight ?? 24) + 8,
+    paddingBottom: 16,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  backBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  helpBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
+
+  // Scroll
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 20 },
+
+  // Hero card
+  heroCard: {
+    borderRadius: 20, padding: 22, marginBottom: 20, overflow: 'hidden',
+    shadowColor: '#059669', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3, shadowRadius: 10, elevation: 7,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
+  heroDecorCircle: {
+    position: 'absolute', width: 180, height: 180, borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.07)', top: -50, right: -40,
   },
-  helpButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  heroIconBox: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center', alignItems: 'center', marginRight: 10,
   },
-  scrollView: {
-    flex: 1,
+  heroTopLabel: { fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  heroValue: {
+    fontSize: 40, fontWeight: '800', color: '#fff',
+    textAlign: 'center', letterSpacing: -0.5, marginVertical: 12,
   },
-  weightCard: {
-    backgroundColor: '#10B981',
-    marginHorizontal: 0,
-    marginTop: 0,
-    paddingVertical: 32,
-    alignItems: 'center',
+  statsStrip: {
+    flexDirection: 'row', backgroundColor: 'rgba(0,0,0,0.15)',
+    borderRadius: 12, paddingVertical: 12, paddingHorizontal: 6,
   },
-  weightLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
-  },
-  weightValue: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  weightSubtext: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    opacity: 0.9,
-    marginTop: 4,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginTop: 20,
-    gap: 12,
-  },
+  statItem: { flex: 1, alignItems: 'center' },
+  statVal: { fontSize: 17, fontWeight: '700', color: '#fff' },
+  statLbl: { fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.25)', marginVertical: 4 },
+
+  // Tabs
+  tabRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   tab: {
-    flex: 1,
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 14,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 14, borderRadius: 14,
+    backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
   },
-  tabActive: {
-    backgroundColor: '#D1FAE5',
-    borderColor: '#10B981',
-  },
-  tabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  tabTextActive: {
-    color: '#10B981',
-  },
-  tabBadge: {
+  tabIconWrap: {
+    width: 34, height: 34, borderRadius: 10,
     backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center',
   },
-  tabBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  itemsList: {
-    paddingHorizontal: 16,
-    marginTop: 20,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 16,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginTop: 4,
-    textAlign: 'center',
-  },
+  tabLabel: { fontSize: 14, fontWeight: '700', color: '#374151' },
+  tabWeight: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
+  tabActiveDot: { width: 7, height: 7, borderRadius: 4, marginLeft: 'auto' },
+
+  // List header
+  listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  listTitle: { fontSize: 20, fontWeight: '700', color: '#111827' },
+  countPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
+  countText: { fontSize: 12, fontWeight: '600' },
+
+  // Empty
+  emptyWrap: { alignItems: 'center', paddingVertical: 52 },
+  emptyIconCircle: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: '#374151', marginBottom: 6 },
+  emptySub: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', paddingHorizontal: 24 },
+
+  // Item card
   itemCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: '#fff', borderRadius: 14, marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  itemIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#D1FAE5',
-    justifyContent: 'center',
-    alignItems: 'center',
+  itemAccent: { width: 4, alignSelf: 'stretch' },
+  itemIconWrap: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', margin: 12 },
+  itemBody: { flex: 1, paddingVertical: 12, paddingRight: 12 },
+
+  itemTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  itemWeightRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  itemWeight: { fontSize: 18, fontWeight: '800' },
+
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 3, borderRadius: 20 },
+  statusPillText: { fontSize: 12, fontWeight: '700' },
+
+  itemMetaRow: { flexDirection: 'row', gap: 14, marginBottom: 6 },
+  itemMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  itemMetaText: { fontSize: 12, color: '#9CA3AF' },
+
+  itemDriverRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  itemDriverText: { fontSize: 13, color: '#6B7280' },
+
+  noteBox: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+    marginTop: 8, backgroundColor: '#FEF3C7',
+    borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
   },
-  itemIconSkipped: {
-    backgroundColor: '#FEE2E2',
-  },
-  itemDetails: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statusBadge: {
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  statusBadgeSkipped: {
-    backgroundColor: '#FEE2E2',
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#10B981',
-  },
-  statusTextSkipped: {
-    color: '#EF4444',
-  },
-  itemDateTime: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 6,
-  },
-  itemWeight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  itemWeightText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#10B981',
-  },
-  driverInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  driverText: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 4,
-    marginTop: 6,
-    backgroundColor: '#F9FAFB',
-    padding: 8,
-    borderRadius: 8,
-  },
-  noteText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
-  },
+  noteText: { flex: 1, fontSize: 12, color: '#92400E', lineHeight: 18 },
 });
