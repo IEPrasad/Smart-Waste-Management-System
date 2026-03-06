@@ -20,11 +20,13 @@ export const generateOperationalReportData = async () => {
 
         if (logsError) throw logsError;
 
-        // 3. Fetch Fleet/Request Status
-        const [pendingRes, ongoingRes, issuesRes] = await Promise.all([
+        // 3. Fetch Fleet/Request Status & Detailed Issues
+        const [pendingRes, ongoingRes, totalIssuesRes, pendingIssuesRes, resolvedIssuesRes] = await Promise.all([
             supabase.from('waste_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
             supabase.from('pickups').select('id', { count: 'exact', head: true }).eq('status', 'ongoing'),
-            supabase.from('issues').select('id', { count: 'exact', head: true }).eq('status', 'pending')
+            supabase.from('issues').select('id', { count: 'exact', head: true }),
+            supabase.from('issues').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+            supabase.from('issues').select('id', { count: 'exact', head: true }).eq('status', 'resolved')
         ]);
 
         // Process Division Data & Monthly Trends
@@ -74,7 +76,11 @@ export const generateOperationalReportData = async () => {
                 totalDrivers: drivers.length,
                 pendingRequests: pendingRes.count || 0,
                 ongoingPickups: ongoingRes.count || 0,
-                unresolvedIssues: issuesRes.count || 0
+                issues: {
+                    total: totalIssuesRes.count || 0,
+                    pending: pendingIssuesRes.count || 0,
+                    resolved: resolvedIssuesRes.count || 0
+                }
             },
             drivers: drivers.map(d => ({
                 name: d.full_name,

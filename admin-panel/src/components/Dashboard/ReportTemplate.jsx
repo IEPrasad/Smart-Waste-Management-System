@@ -1,6 +1,5 @@
 import React from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const PrintReset = createGlobalStyle`
   @media print {
@@ -178,40 +177,54 @@ const ReportTemplate = ({ data, id = "operational-report" }) => {
             </SummaryGrid>
             <SummaryGrid>
               <SummaryCard>
-                <div className="label">Pending Requests</div>
-                <div className="value">{data.summary.pendingRequests}</div>
+                <div className="label">Unresolved Issues</div>
+                <div className="value">{data.summary.issues.pending} Tasks</div>
+              </SummaryCard>
+            </SummaryGrid>
+            <SummaryGrid>
+              <SummaryCard>
+                <div className="label">Total System Issues</div>
+                <div className="value">{data.summary.issues.total} Reported</div>
               </SummaryCard>
               <SummaryCard>
-                <div className="label">Unresolved Issues</div>
-                <div className="value">{data.summary.unresolvedIssues}</div>
+                <div className="label">Resolved Success Rate</div>
+                <div className="value">
+                  {data.summary.issues.total > 0
+                    ? ((data.summary.issues.resolved / data.summary.issues.total) * 100).toFixed(0)
+                    : 0}%
+                </div>
+              </SummaryCard>
+              <SummaryCard>
+                <div className="label">Pending Requests</div>
+                <div className="value">{data.summary.pendingRequests}</div>
               </SummaryCard>
             </SummaryGrid>
           </Section>
 
           <Section>
-            <SectionTitle>Monthly Waste Trends</SectionTitle>
-            <div style={{ height: '300px', width: '100%', background: '#F8FAFC', padding: '20px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.trends}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                  <XAxis
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#64748B' }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 10, fill: '#64748B' }}
-                  />
-                  <Tooltip isAnimationActive={false} />
-                  <Legend wrapperStyle={{ fontSize: 10, fontWeight: 700 }} />
-                  <Bar dataKey="compost" name="Compost (kg)" fill="#10B981" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                  <Bar dataKey="recycle" name="Recycle (kg)" fill="#3B82F6" radius={[4, 4, 0, 0]} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <SectionTitle>Monthly Waste Trends (Tabular Summary)</SectionTitle>
+            <Table>
+              <thead>
+                <tr>
+                  <th>Time Period</th>
+                  <th>Compost Amount (kg)</th>
+                  <th>Recycle Amount (kg)</th>
+                  <th>Combined Weight (kg)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.trends.map((month, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 700 }}>{month.name}</td>
+                    <td>{month.compost.toFixed(1)} kg</td>
+                    <td>{month.recycle.toFixed(1)} kg</td>
+                    <td style={{ color: '#1E40AF', fontWeight: 700 }}>
+                      {(month.compost + month.recycle).toFixed(1)} kg
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           </Section>
 
           <Section>
@@ -267,7 +280,7 @@ const ReportTemplate = ({ data, id = "operational-report" }) => {
             © 2026 Smart Waste Management System - Confidential Admin Report
           </Footer>
         </Page>
-      </PrintContainer>
+      </PrintContainer >
     </>
   );
 };
