@@ -146,30 +146,30 @@ const ModalBody = styled.div`
 
 const TabContainer = styled.div`
     display: flex;
-    gap: 16px;
+    gap: 12px;
     padding: 0 32px;
-    border-bottom: 1px solid #F1F5F9;
     margin-bottom: 24px;
+    flex-wrap: wrap;
 `;
 
 const TabContent = styled.button`
-    padding: 12px 16px;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid ${props => props.$active ? props.$color : 'transparent'};
-    color: ${props => props.$active ? props.$color : theme.colors.text.secondary};
-    font-weight: ${props => props.$active ? '700' : '600'};
+    padding: 10px 20px;
+    background: ${props => props.$active ? `linear-gradient(135deg, ${props.$color}, ${props.$color}CC)` : theme.colors.white};
+    border: 1px solid ${props => props.$active ? 'transparent' : '#E2E8F0'};
+    color: ${props => props.$active ? theme.colors.white : theme.colors.text.secondary};
+    font-weight: 600;
     font-size: 14px;
+    border-radius: 99px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 8px;
+    box-shadow: ${props => props.$active ? `0 4px 12px ${props.$color}40` : '0 2px 4px rgba(0,0,0,0.02)'};
 
     &:hover {
-        color: ${props => props.$color};
-        background: ${props => props.$hoverBg};
-        border-radius: 8px 8px 0 0;
+        transform: translateY(-1px);
+        box-shadow: ${props => props.$active ? `0 6px 16px ${props.$color}60` : '0 4px 6px rgba(0,0,0,0.05)'};
     }
 `;
 
@@ -178,19 +178,21 @@ const PickupList = styled.div`
 `;
 
 const PickupCard = styled(motion.div)`
-    padding: 20px;
+    padding: 24px;
     background: ${theme.colors.white};
-    border: 1px solid #E2E8F0;
-    border-radius: ${theme.radius.md};
+    border: none;
+    border-radius: ${theme.radius.lg};
     margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); /* very soft, large shadow */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 
     &:hover {
-        border-color: ${theme.colors.primary.main};
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.1);
         transform: translateY(-2px);
     }
 `;
@@ -389,11 +391,10 @@ const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }
                                         key={tab.id}
                                         $active={activeTab === tab.id}
                                         $color={tab.color}
-                                        $hoverBg={tab.hoverBg}
                                         onClick={() => setActiveTab(tab.id)}
                                     >
                                         {tab.label}
-                                        <Badge $bg={activeTab === tab.id ? tab.color : '#F1F5F9'} $color={activeTab === tab.id ? theme.colors.white : theme.colors.text.secondary}>
+                                        <Badge $bg={activeTab === tab.id ? 'rgba(255, 255, 255, 0.25)' : '#F1F5F9'} $color={activeTab === tab.id ? theme.colors.white : theme.colors.text.secondary}>
                                             {count}
                                         </Badge>
                                     </TabContent>
@@ -420,57 +421,63 @@ const DeploymentDetailsModal = ({ isOpen, onClose, driver, initialPickups = [] }
                                     <p style={{ color: theme.colors.text.secondary }}>No pickups found for this category.</p>
                                 </div>
                             ) : (
-                                filteredPickups.map((pickup, idx) => (
-                                    <PickupCard
-                                        key={pickup.id}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: idx * 0.05 }}
-                                    >
-                                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                {pickup.waste_types.map((type, tIdx) => (
-                                                    <WasteTypeIcon key={tIdx} $type={type} title={type}>
-                                                        {type === 'Organic' ? <Leaf size={18} /> : type === 'Recycle' ? <Recycle size={18} /> : <Trash2 size={18} />}
-                                                    </WasteTypeIcon>
-                                                ))}
+                                filteredPickups.map((pickup, idx) => {
+                                    const statusColor = pickup.status === 'collected' ? theme.colors.success.main :
+                                        pickup.status === 'missed' ? theme.colors.danger.main :
+                                            theme.colors.warning.main;
+                                    return (
+                                        <PickupCard
+                                            key={pickup.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                        >
+                                            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: `linear-gradient(to bottom, ${statusColor}, ${statusColor}80)` }} />
+                                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginLeft: '8px' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    {pickup.waste_types.map((type, tIdx) => (
+                                                        <WasteTypeIcon key={tIdx} $type={type} title={type}>
+                                                            {type === 'Organic' ? <Leaf size={18} /> : type === 'Recycle' ? <Recycle size={18} /> : <Trash2 size={18} />}
+                                                        </WasteTypeIcon>
+                                                    ))}
+                                                </div>
+                                                <CitizenInfo>
+                                                    <CitizenName>{pickup.citizens?.full_name}</CitizenName>
+                                                    <MetaInfo>
+                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <MapPin size={14} /> {pickup.citizens?.division}
+                                                        </span>
+                                                        <span style={{ color: '#E2E8F0' }}>|</span>
+                                                        <span>{pickup.citizens?.assessment_number}</span>
+                                                    </MetaInfo>
+                                                </CitizenInfo>
                                             </div>
-                                            <CitizenInfo>
-                                                <CitizenName>{pickup.citizens?.full_name}</CitizenName>
-                                                <MetaInfo>
-                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                        <MapPin size={14} /> {pickup.citizens?.division}
-                                                    </span>
-                                                    <span style={{ color: '#E2E8F0' }}>|</span>
-                                                    <span>{pickup.citizens?.assessment_number}</span>
-                                                </MetaInfo>
-                                            </CitizenInfo>
-                                        </div>
 
-                                        <DistanceText>
-                                            <Badge
-                                                $bg={
-                                                    pickup.status === 'collected' ? theme.colors.success.light :
-                                                        pickup.status === 'missed' ? theme.colors.danger.light :
-                                                            theme.colors.warning.light
-                                                }
-                                                $color={
-                                                    pickup.status === 'collected' ? theme.colors.success.dark :
-                                                        pickup.status === 'missed' ? theme.colors.danger.main :
-                                                            '#92400E'
-                                                }
-                                            >
-                                                {pickup.status === 'collected' && <CheckCircle2 size={12} />}
-                                                {pickup.status === 'missed' && <AlertCircle size={12} />}
-                                                {pickup.status === 'pending' && <Clock size={12} />}
-                                                {pickup.status}
-                                            </Badge>
-                                            <span style={{ fontSize: '11px', color: theme.colors.text.muted, marginTop: '4px' }}>
-                                                Priority #{idx + 1}
-                                            </span>
-                                        </DistanceText>
-                                    </PickupCard>
-                                ))
+                                            <DistanceText>
+                                                <Badge
+                                                    $bg={
+                                                        pickup.status === 'collected' ? theme.colors.success.light :
+                                                            pickup.status === 'missed' ? theme.colors.danger.light :
+                                                                theme.colors.warning.light
+                                                    }
+                                                    $color={
+                                                        pickup.status === 'collected' ? theme.colors.success.dark :
+                                                            pickup.status === 'missed' ? theme.colors.danger.main :
+                                                                '#92400E'
+                                                    }
+                                                >
+                                                    {pickup.status === 'collected' && <CheckCircle2 size={12} />}
+                                                    {pickup.status === 'missed' && <AlertCircle size={12} />}
+                                                    {pickup.status === 'pending' && <Clock size={12} />}
+                                                    {pickup.status}
+                                                </Badge>
+                                                <span style={{ fontSize: '11px', color: theme.colors.text.muted, marginTop: '4px' }}>
+                                                    Priority #{idx + 1}
+                                                </span>
+                                            </DistanceText>
+                                        </PickupCard>
+                                    );
+                                })
                             )}
                         </PickupList>
                     </ModalBody>
