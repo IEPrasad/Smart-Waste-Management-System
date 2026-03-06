@@ -1,38 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { X, User as PersonIcon, Mail as EmailIcon, Phone as PhoneIcon, Award as BadgeIcon, CreditCard as CreditCardIcon, Truck as LocalShippingIcon, Circle as CircleIcon, History as HistoryIcon } from 'lucide-react';
+import './DriverDetailsModal.css';
+import CloseIcon from '@mui/icons-material/Close';
+import PersonIcon from '@mui/icons-material/Person';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import BadgeIcon from '@mui/icons-material/Badge';
+import CreditCardIcon from '@mui/icons-material/CreditCard';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import CircleIcon from '@mui/icons-material/Circle';
+import HistoryIcon from '@mui/icons-material/History';
 import CircularProgress from '@mui/material/CircularProgress';
 import { getDriverPickupLogs } from '../../services/driverService';
-import useEscapeKey from '../../hooks/useEscapeKey';
-
-const CloseButton = styled.button`
-  background: #EF4444;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white;
-
-  &:hover {
-    background: #DC2626;
-    transform: rotate(90deg) scale(1.1);
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-  }
-`;
 
 const DriverDetailsModal = ({ isOpen, onClose, driver }) => {
     const [pickupLogs, setPickupLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
     const [logsError, setLogsError] = useState(null);
     const [selectedFilter, setSelectedFilter] = useState('all');
-
-    // Use Escape key to close
-    useEscapeKey(onClose, isOpen);
 
     // Time filter options
     const filterOptions = [
@@ -170,9 +154,9 @@ const DriverDetailsModal = ({ isOpen, onClose, driver }) => {
                 {/* Header */}
                 <div className="driver-modal-header">
                     <h2>Driver Details</h2>
-                    <CloseButton onClick={onClose}>
-                        <X size={20} strokeWidth={2.5} />
-                    </CloseButton>
+                    <button className="driver-modal-close-btn" onClick={onClose}>
+                        <CloseIcon />
+                    </button>
                 </div>
 
                 {/* Two Column Layout */}

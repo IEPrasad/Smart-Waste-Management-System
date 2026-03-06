@@ -1,28 +1,7 @@
 import React, { useState } from 'react';
 import './AddVehicleModal.css';
-import { X } from 'lucide-react';
-import styled from 'styled-components';
+import CloseIcon from '@mui/icons-material/Close';
 import { supabase } from '../../lib/supabaseClient';
-
-const CloseButton = styled.button`
-  background: #EF4444;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  color: white;
-
-  &:hover {
-    background: #DC2626;
-    transform: rotate(90deg) scale(1.1);
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-  }
-`;
 
 const AddVehicleModal = ({ isOpen, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
@@ -108,9 +87,9 @@ const AddVehicleModal = ({ isOpen, onClose, onSuccess }) => {
             <div className="vehicle-modal-container">
                 <div className="vehicle-modal-header">
                     <h2>Add New Vehicle</h2>
-                    <CloseButton onClick={onClose} disabled={isLoading}>
-                        <X size={20} strokeWidth={2.5} />
-                    </CloseButton>
+                    <button className="vehicle-close-btn" onClick={onClose} disabled={isLoading}>
+                        <CloseIcon />
+                    </button>
                 </div>
                 <div className="vehicle-modal-body">
                     {error && <div className="vehicle-error-message">{error}</div>}
