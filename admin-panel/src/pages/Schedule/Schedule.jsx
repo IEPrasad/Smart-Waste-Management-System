@@ -73,7 +73,7 @@ const Schedule = () => {
             // Fetch pending requests
             const { data: reqData } = await supabase
                 .from('waste_requests')
-                .select('*')
+                .select('*, citizens(*)')
                 .eq('status', 'pending')
                 .order('date', { ascending: false });
 
