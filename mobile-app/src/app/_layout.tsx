@@ -11,10 +11,6 @@ import "react-native-reanimated";
 import { useColorScheme } from "../hooks/use-color-scheme";
 import Splash from "./splash";
 
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [showSplash, setShowSplash] = useState(true);
@@ -24,7 +20,6 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
         <Stack.Screen name="role-selection" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="auth/citizen-login"
           options={{ headerShown: false }}

@@ -29,7 +29,7 @@ export default function RoleSelectionScreen() {
                 {/* Top Image */}
                 <View style={styles.imageContainer}>
                     <Image
-                        source={require('../assets/images/role_selection_header.png')}
+                        source={require('../assets/images/role_selection_header.jpg')}
                         style={styles.headerImage}
                         resizeMode="contain"
                     />

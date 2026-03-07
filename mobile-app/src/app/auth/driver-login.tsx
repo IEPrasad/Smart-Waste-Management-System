@@ -13,6 +13,7 @@ import {
     Text,
     View,
     ActivityIndicator,
+    TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
@@ -132,6 +133,14 @@ export default function DriverLoginScreen() {
                                 onRightIconPress={() => setShowPassword(!showPassword)}
                             />
 
+                            {/* Forgot Password */}
+                            <TouchableOpacity
+                                style={styles.forgotPasswordContainer}
+                                onPress={() => router.push('/auth/forgot-password')}
+                            >
+                                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                            </TouchableOpacity>
+
                             <Button
                                 title="Log in"
                                 onPress={handleLogin}
@@ -165,4 +174,14 @@ const styles = StyleSheet.create({
     formContainer: { marginBottom: 20 },
     footerContainer: { paddingHorizontal: 20, marginTop: 'auto', marginBottom: 20 },
     footerText: { fontSize: 12, color: '#999', textAlign: 'center', lineHeight: 18 },
+    forgotPasswordContainer: {
+        alignItems: 'flex-end',
+        marginBottom: 20,
+        marginTop: -10,
+    },
+    forgotPasswordText: {
+        color: '#1EBEA5',
+        fontWeight: '600',
+        fontSize: 14,
+    },
 });
