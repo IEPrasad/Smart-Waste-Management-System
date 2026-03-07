@@ -7,9 +7,9 @@ import { checkAdminAuth } from './services/authService';
 import Drivers from './pages/Driver/Drivers';
 import Citizen from './pages/citizen/Citizen';
 import Schedule from './pages/Schedule/Schedule';
+import Issues from './pages/Issues/Issues';
 
 import Dashboard from './pages/dashboard/dashboard';
-import Issues from './pages/Issues/Issues';
 import Finance from './pages/Finance/Finance';
 
 // Protected Route wrapper component
