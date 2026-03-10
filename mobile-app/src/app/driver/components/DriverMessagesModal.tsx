@@ -11,6 +11,7 @@ interface DriverMessagesModalProps {
     visible: boolean;
     onClose: () => void;
     onOpenChat: (pickup: any) => void; // Parent handles opening the actual chat
+    driverId: string | null;
 }
 
 // Data shape for our list
