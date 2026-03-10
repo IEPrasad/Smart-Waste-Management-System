@@ -242,6 +242,7 @@ export default function DriverHomeScreen() {
                 visible={isMessagesVisible}
                 onClose={() => setMessagesVisible(false)}
                 onOpenChat={(data) => { setChatPickup(data); setChatVisible(true); }}
+                driverId={driverId}
             />
 
             <DriverChatModal visible={isChatVisible} pickup={chatPickup} driverId={driverId} onClose={() => setChatVisible(false)} />
