@@ -357,3 +357,4 @@ const styles = StyleSheet.create({
   navText: { fontSize: 11, color: '#9CA3AF', marginTop: 3, fontWeight: '500' },
   navTextActive: { color: '#059669', fontWeight: '700' },
 });
+

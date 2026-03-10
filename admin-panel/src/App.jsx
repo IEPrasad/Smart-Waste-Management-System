@@ -6,10 +6,11 @@ import { checkAdminAuth } from './services/authService';
 
 import Drivers from './pages/Driver/Drivers';
 import Citizen from './pages/citizen/Citizen';
+import Schedule from './pages/Schedule/Schedule';
+import Issues from './pages/Issues/Issues';
 
-const Dashboard = () => <h2>Dashboard</h2>;
-const Schedule = () => <h2>Schedules</h2>;
-const Issues = () => <h2>Issues</h2>;
+import Dashboard from './pages/dashboard/dashboard';
+import Finance from './pages/Finance/Finance';
 
 // Protected Route wrapper component
 const ProtectedRoute = ({ children }) => {
@@ -50,10 +51,11 @@ function App() {
                     </ProtectedRoute>
                 }>
                     <Route index element={<Dashboard />} />
-                    <Route path="citizen" element={<Citizen />} />
+                    <Route path="citizens" element={<Citizen />} />
                     <Route path="drivers" element={<Drivers />} />
                     <Route path="schedule" element={<Schedule />} />
                     <Route path="issues" element={<Issues />} />
+                    <Route path="finance" element={<Finance />} />
                 </Route>
 
                 {/* Redirect root to login */}

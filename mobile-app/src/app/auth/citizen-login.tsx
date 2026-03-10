@@ -40,21 +40,22 @@ export default function CitizenLogin() {
         setLoading(false);
 
         if (result.success) {
-            // Login හරි, දැන් Status එක බලමු
+            // Login successful, check the status
             if (result.status === 'approved') {
-                // Approved නම් ඇතුලට යන්න (Dashboard එකට)
-                // ඔයාගේ Dashboard එක 'citizen/index' හෝ '(tabs)' වෙන්න පුළුවන්
+                // Approved - navigate to Dashboard
                 router.replace('/citizen' as any);
-            } else if (result.status === 'pending') {
-                Alert.alert(
-                    "Account Pending",
-                    "Your account is waiting for admin approval. Please check back later."
-                );
-            } else if (result.status === 'rejected') {
-                Alert.alert("Account Rejected", "Sorry, your registration request has been rejected.");
+            } else if (result.status === 'pending' || result.status === 'rejected' || result.status === 'suspended') {
+                // Navigate to account status screen with the status and user ID
+                router.replace({
+                    pathname: '/auth/account-status',
+                    params: {
+                        status: result.status,
+                        userId: result.user?.id
+                    }
+                } as any);
             }
         } else {
-            // Login වැරදියි (Password wrong or User not found)
+            // Login failed (Password wrong or User not found)
             Alert.alert("Login Failed", result.error || "Invalid email or password");
         }
     };
@@ -106,7 +107,10 @@ export default function CitizenLogin() {
                             />
 
                             {/* Forgot Password */}
-                            <TouchableOpacity style={styles.forgotPasswordContainer}>
+                            <TouchableOpacity
+                                style={styles.forgotPasswordContainer}
+                                onPress={() => router.push('/auth/forgot-password')}
+                            >
                                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
                             </TouchableOpacity>
 
@@ -215,5 +219,3 @@ const styles = StyleSheet.create({
 });
 
 //sample comment
-
-

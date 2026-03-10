@@ -117,3 +117,69 @@ export const citizenLogin = async (email: string, password: string) => {
         return { success: false, error: error.message };
     }
 };
+
+export const sendPasswordResetOtp = async (email: string) => {
+    try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+        return { success: true };
+    } catch (error: any) {
+        console.error("Send OTP Error:", error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+export const verifyPasswordResetOtp = async (email: string, token: string) => {
+    try {
+        const { error } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: 'recovery',
+        });
+        if (error) throw error;
+        return { success: true };
+    } catch (error: any) {
+        console.error("Verify OTP Error:", error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+export const updatePassword = async (newPassword: string) => {
+    try {
+        const { error } = await supabase.auth.updateUser({
+            password: newPassword
+        });
+        if (error) throw error;
+        return { success: true };
+    } catch (error: any) {
+        console.error("Update Password Error:", error.message);
+        return { success: false, error: error.message };
+    }
+};
+
+export const checkEmailExists = async (email: string) => {
+    try {
+        // Check citizens table
+        const { data: citizenData, error: citizenError } = await supabase
+            .from('citizens')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (citizenData) return { exists: true };
+
+        // Check drivers table
+        const { data: driverData, error: driverError } = await supabase
+            .from('driver')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (driverData) return { exists: true };
+
+        return { exists: false };
+    } catch (error: any) {
+        console.error("Check Email Error:", error.message);
+        return { exists: false, error: error.message };
+    }
+};

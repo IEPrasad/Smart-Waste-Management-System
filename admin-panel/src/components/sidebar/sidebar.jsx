@@ -8,6 +8,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import AgricultureIcon from '@mui/icons-material/Agriculture';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import SyncProblemIcon from '@mui/icons-material/SyncProblem';
+import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { NavLink } from "react-router-dom";
 import { signOutAdmin } from "../../services/authService";
@@ -41,7 +42,7 @@ const Sidebar = () => {
                         )}
                     </NavLink>
 
-                    <NavLink to="/dashboard/citizen" className="link">
+                    <NavLink to="/dashboard/citizens" className="link">
                         {({ isActive }) => (
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <GroupsIcon className="icon" />
@@ -70,6 +71,14 @@ const Sidebar = () => {
                             <li className={isActive ? "active-item" : "list-item"}>
                                 <SyncProblemIcon className="icon" />
                                 <span>Issues</span>
+                            </li>
+                        )}
+                    </NavLink>
+                    <NavLink to="/dashboard/finance" className="link">
+                        {({ isActive }) => (
+                            <li className={isActive ? "active-item" : "list-item"}>
+                                <AccountBalanceIcon className="icon" />
+                                <span>Finance</span>
                             </li>
                         )}
                     </NavLink>

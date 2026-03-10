@@ -5,6 +5,8 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 import ChangePasswordModal from './ChangePasswordModal';
+import { useRouter } from 'expo-router'; // 1. Import router for redirection
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface EditProfileModalProps {
     visible: boolean;
@@ -14,13 +16,12 @@ interface EditProfileModalProps {
 }
 
 export default function EditProfileModal({ visible, onClose, currentEmail, currentPhone }: EditProfileModalProps) {
-    // We initialize the state with the current data passed from the profile modal
+    const router = useRouter();
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [isPasswordModalVisible, setPasswordModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // This ensures that when the modal opens, the boxes are pre-filled with current data
     useEffect(() => {
         if (visible) {
             setEmail(currentEmail);
@@ -28,33 +29,77 @@ export default function EditProfileModal({ visible, onClose, currentEmail, curre
         }
     }, [visible, currentEmail, currentPhone]);
 
+    // 2. The Main Update Function
     const handleUpdateInfo = async () => {
         if (!email.trim() || !phone.trim()) {
             Alert.alert("Error", "Email and Phone number cannot be empty.");
             return;
         }
 
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
+        // Check if email is actually different
+        const isEmailChanged = email.trim().toLowerCase() !== currentEmail.toLowerCase();
 
-        const { error } = await supabase
-            .from('driver')
-            .update({
-                email: email.trim(),
-                mobile_number: phone.trim()
-            })
-            .eq('id', user?.id);
-
-        if (error) {
-            Alert.alert("Update Failed", error.message);
+        if (isEmailChanged) {
+            // 3. Trigger the Confirmation Alert
+            Alert.alert(
+                "Confirm Email Change",
+                "Are you sure you want to change your email? After confirming, you will have to verify the new email and log in again with your new credentials.",
+                [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Yes, Change and Logout", onPress: () => processUpdate(true) }
+                ]
+            );
         } else {
-            Alert.alert("Success", "Profile details updated.");
-            onClose();
+            // Just update phone number/other info
+            processUpdate(false);
         }
-        setLoading(false);
     };
 
-    // Helper to ensure only numbers are typed in the phone field
+    // 4. The actual Database/Auth Logic
+    const processUpdate = async (shouldLogout: boolean) => {
+        setLoading(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("User not found");
+
+            // A. Update Auth if email changed
+            if (shouldLogout) {
+                const { error: authError } = await supabase.auth.updateUser({
+                    email: email.trim(),
+                });
+                if (authError) throw authError;
+            }
+
+            // B. Update Database Table
+            const { error: dbError } = await supabase
+                .from('driver')
+                .update({
+                    email: email.trim(),
+                    mobile_number: phone.trim()
+                })
+                .eq('id', user.id);
+
+            if (dbError) throw dbError;
+
+            if (shouldLogout) {
+                // 5. Clear session and force redirect
+                await supabase.auth.signOut();
+                await AsyncStorage.clear();
+                Alert.alert("Action Required", "Please check your new email for a verification link, then log in.");
+                onClose();
+                router.replace('/auth/driver-login');
+            } else {
+                Alert.alert("Success", "Profile details updated.");
+                onClose();
+            }
+
+        } catch (error: any) {
+            Alert.alert("Update Failed", error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handlePhoneChange = (text: string) => {
         const numericValue = text.replace(/[^0-9]/g, '');
         setPhone(numericValue);
@@ -92,12 +137,12 @@ export default function EditProfileModal({ visible, onClose, currentEmail, curre
                             style={styles.input}
                             value={phone}
                             onChangeText={handlePhoneChange}
-                            keyboardType="numeric" // Opens number pad
-                            maxLength={10} // Optional limit
+                            keyboardType="numeric"
+                            maxLength={10}
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.updateBtn} onPress={handleUpdateInfo}>
+                    <TouchableOpacity style={styles.updateBtn} onPress={handleUpdateInfo} disabled={loading}>
                         {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.updateBtnText}>Save Changes</Text>}
                     </TouchableOpacity>
 
@@ -116,7 +161,6 @@ export default function EditProfileModal({ visible, onClose, currentEmail, curre
                     </TouchableOpacity>
                 </ScrollView>
 
-                {/* Secure Password Popup */}
                 <ChangePasswordModal
                     visible={isPasswordModalVisible}
                     onClose={() => setPasswordModalVisible(false)}

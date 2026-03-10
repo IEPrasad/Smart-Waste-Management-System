@@ -5,28 +5,21 @@
     gap: 24px;
     padding: 20px 24px;
     width: 100%;
-    height: calc(100vh - 80px);
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
+    min-height: calc(100vh - 80px);
     box-sizing: border-box;
 }
 
-/* Custom Scrollbar */
+/* Hide Scrollbar */
+.citizen-page {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
 .citizen-page::-webkit-scrollbar {
-    width: 8px;
-}
-
-.citizen-page::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.citizen-page::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
-}
-
-.citizen-page::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    display: none;
+    /* Chrome, Safari and Opera */
 }
 
 /* ===== Stats Cards Section ===== */
@@ -40,8 +33,6 @@
 /* ===== Table Section ===== */
 .citizen-page__table {
     flex: 1;
-    min-height: 0;
-    overflow: hidden;
 }
 
 /* ===== Responsive Adjustments ===== */
