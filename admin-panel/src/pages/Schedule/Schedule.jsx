@@ -136,8 +136,10 @@ const Schedule = () => {
 
         // 2. Filter and collapse requests
         const userGroupMap = reqData.reduce((acc, req) => {
-            // Skip if user already has a pending pickup
-            if (usersWithPendingPickups.has(req.user_id)) return acc;
+            // In a previous version, we skipped users who already have active pending pickups
+            // However, this caused the "Division Priority" count to look like 0 when it should be 1.
+            // We now keep all pending requests to show the correct volume.
+            // if (usersWithPendingPickups.has(req.user_id)) return acc;
 
             const div = req.division || req.citizens?.division || 'Unknown';
             const currentTypes = Array.isArray(req.waste_type) ? req.waste_type : [req.type || 'General'];
@@ -215,37 +217,25 @@ const Schedule = () => {
 
             const targetUserIds = [...new Set(baseRequests.map(r => r.user_id))];
 
-            // 1. Safeguard: Check if any of these users ALREADY have a pending pickup
-            // (Secondary check in case UI was stale)
+            // 1. Identify which targeted users ALREADY have a pending pickup
             const { data: existingPickups } = await supabase
                 .from('pickups')
                 .select('citizen_id')
                 .eq('status', 'pending')
                 .in('citizen_id', targetUserIds);
 
-            if (existingPickups && existingPickups.length > 0) {
-                const conflictingIds = existingPickups.map(p => p.citizen_id);
-                toast.error('Some users already have a pending pickup assigned.');
-                fetchData();
-                setIsAssigning(false);
-                return;
-            }
+            const conflictingUserIds = new Set(existingPickups?.map(p => p.citizen_id) || []);
 
-            // 2. Find ALL pending requests for these users (to schedule all of them together)
-            const { data: allUserPendingRequests } = await supabase
-                .from('waste_requests')
-                .select('id, user_id')
-                .eq('status', 'pending')
-                .in('user_id', targetUserIds);
+            // Separate users into those needing a NEW pickup and those just needing request updates
+            const usersNeedingNewPickup = targetUserIds.filter(uid => !conflictingUserIds.has(uid));
+            const usersToLinkOnly = targetUserIds.filter(uid => conflictingUserIds.has(uid));
 
-            if (allUserPendingRequests && allUserPendingRequests.length > 0) {
-                const allRequestIdsToSchedule = allUserPendingRequests.map(r => r.id);
-
-                // Get citizen coordinates
+            // 2. Insert NEW pickups only for those who don't have one
+            if (usersNeedingNewPickup.length > 0) {
                 const { data: citizensList } = await supabase
                     .from('citizens')
                     .select('id, latitude, longitude')
-                    .in('id', targetUserIds);
+                    .in('id', usersNeedingNewPickup);
 
                 if (citizensList && citizensList.length > 0) {
                     const pickupsToInsert = citizensList.map(citizen => ({
@@ -256,21 +246,31 @@ const Schedule = () => {
                         lng: citizen.longitude
                     }));
 
-                    // Insert pickups
                     const { error: insertError } = await supabase
                         .from('pickups')
                         .insert(pickupsToInsert);
 
                     if (insertError) throw insertError;
-
-                    // Update ALL associated requests to 'scheduled'
-                    const { error: updateError } = await supabase
-                        .from('waste_requests')
-                        .update({ status: 'scheduled' })
-                        .in('id', allRequestIdsToSchedule);
-
-                    if (updateError) throw updateError;
                 }
+            }
+
+            // 3. Find ALL pending requests for these users (to schedule all of them together)
+            const { data: allUserPendingRequests } = await supabase
+                .from('waste_requests')
+                .select('id, user_id')
+                .eq('status', 'pending')
+                .in('user_id', targetUserIds);
+
+            if (allUserPendingRequests && allUserPendingRequests.length > 0) {
+                const allRequestIdsToSchedule = allUserPendingRequests.map(r => r.id);
+
+                // Update ALL associated requests to 'scheduled'
+                const { error: updateError } = await supabase
+                    .from('waste_requests')
+                    .update({ status: 'scheduled' })
+                    .in('id', allRequestIdsToSchedule);
+
+                if (updateError) throw updateError;
             }
 
             toast.success(`Successfully assigned ${requestIds.length} request(s)!`);
