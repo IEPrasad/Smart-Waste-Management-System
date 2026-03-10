@@ -16,7 +16,7 @@ export default function CitizenWelcomeScreen() {
     };
 
     const handleRegister = () => {
-        router.push('/auth/register-step1' as any);
+        router.push('/auth/register' as any);
     };
 
     return (

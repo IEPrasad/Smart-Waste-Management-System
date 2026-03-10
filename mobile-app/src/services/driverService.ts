@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
 
 export const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // km
@@ -27,4 +29,36 @@ export const fetchTodayPickups = async (uid: string) => {
         assessment_no: p.citizens?.assessment_number,
         gn_division: p.citizens?.gn_division
     }));
+};
+
+export const uploadDriverPhoto = async (driverId: string, supabase: any) => {
+    // 1. Ask for permission and pick image
+    const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+        base64: true, // We use base64 for easy upload
+    });
+
+    if (result.canceled || !result.assets[0].base64) return null;
+
+    const fileExt = 'jpg';
+    const fileName = `${driverId}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    // 2. Upload to Supabase Storage Bucket
+    const { error: uploadError } = await supabase.storage
+        .from('driver-images')
+        .upload(filePath, decode(result.assets[0].base64), {
+            contentType: 'image/jpeg',
+            upsert: true, // This overwrites the old photo
+        });
+
+    if (uploadError) throw uploadError;
+
+    // 3. Get the Public URL
+    const { data } = supabase.storage.from('driver-images').getPublicUrl(filePath);
+
+    return data.publicUrl;
 };
