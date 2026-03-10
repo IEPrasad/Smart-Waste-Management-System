@@ -50,78 +50,119 @@ const Schedule = () => {
 
         try {
             // Fetch divisions
-            const { data: divData } = await supabase
+            const { data: divData, error: divError } = await supabase
                 .from('divisions')
                 .select('*')
                 .order('name');
-            if (divData) setDivisions(divData);
+
+            if (divError) {
+                console.error('Divisions fetch error:', divError);
+                toast.error('Divisions Error: ' + divError.message);
+            } else {
+                setDivisions(divData || []);
+                console.log('Fetched Divisions:', divData?.length);
+            }
 
             // Fetch all drivers (for assignment)
-            const { data: allDriverData } = await supabase
+            const { data: allDriverData, error: driverError } = await supabase
                 .from('driver')
                 .select('*, vehicles(vehicle_no)')
                 .order('full_name');
 
-            if (allDriverData) {
+            if (driverError) {
+                console.error('Drivers fetch error:', driverError);
+            } else if (allDriverData) {
                 const formattedDrivers = allDriverData.map(d => ({
                     ...d,
                     vehicle_number: d.vehicles ? d.vehicles.vehicle_no : null
                 }));
                 setDrivers(formattedDrivers);
+                console.log('Fetched Drivers:', allDriverData.length);
+            }
+
+            // Fetch live pending pickups (needed for filtering requests)
+            const { data: pickupsData, error: pickupsError } = await supabase
+                .from('pickups')
+                .select('*, citizens(division)')
+                .eq('status', 'pending');
+
+            if (pickupsError) {
+                console.error('Pickups fetch error:', pickupsError);
+            } else {
+                setPickups(pickupsData || []);
+                console.log('Fetched Pending Pickups:', pickupsData?.length);
             }
 
             // Fetch pending requests
-            const { data: reqData } = await supabase
+            const { data: reqData, error: reqError } = await supabase
                 .from('waste_requests')
                 .select('*, citizens(*)')
                 .eq('status', 'pending')
                 .order('date', { ascending: false });
 
-            // Fetch live pending pickups
-            const { data: pickupsData } = await supabase
-                .from('pickups')
-                .select('*, citizens(division)')
-                .eq('status', 'pending');
+            if (reqError) {
+                console.error('Waste Requests fetch error:', reqError);
+                // Fallback attempt without join if join fails
+                console.log('Attempting fallback fetch without citizens join...');
+                const { data: fallbackReqData, error: fallbackError } = await supabase
+                    .from('waste_requests')
+                    .select('*')
+                    .eq('status', 'pending');
 
-            if (pickupsData) setPickups(pickupsData);
-
-            if (reqData) {
-                // 1. Identify users who already have active pending pickups
-                const usersWithPendingPickups = new Set(pickupsData?.map(p => p.citizen_id) || []);
-
-                // 2. Filter and collapse requests: 
-                //    - Exclude users with existing pending pickups
-                //    - Aggregate multiple requests from the same user into one entry
-                //    - Collect all unique waste types for that user
-                const userGroupMap = reqData.reduce((acc, req) => {
-                    // Skip if user already has a pending pickup (to avoid duplicate driver assignment)
-                    if (usersWithPendingPickups.has(req.user_id)) return acc;
-
-                    if (!acc[req.user_id]) {
-                        acc[req.user_id] = {
-                            ...req,
-                            waste_type: [req.type] // Initialize as array of types
-                        };
-                    } else {
-                        // If user already seen, just add this request's type if it's new
-                        if (!acc[req.user_id].waste_type.includes(req.type)) {
-                            acc[req.user_id].waste_type.push(req.type);
-                        }
-                    }
-                    return acc;
-                }, {});
-
-                const finalRequests = Object.values(userGroupMap);
-                setRequests(finalRequests);
+                if (fallbackError) {
+                    toast.error('Requests Error: ' + reqError.message);
+                } else {
+                    processRequests(fallbackReqData || [], pickupsData || []);
+                }
+            } else {
+                processRequests(reqData || [], pickupsData || []);
             }
 
         } catch (error) {
-            console.error('Error fetching data:', error);
-            toast.error('Failed to fetch data');
+            console.error('Error in fetchData:', error);
+            toast.error('System Error: ' + error.message);
         } finally {
             setLoading(false);
         }
     };
+
+    function processRequests(reqData, pickupsData) {
+        console.log('Processing Requests:', reqData.length);
+
+        // 1. Identify users who already have active pending pickups
+        // In pickups table, the column for user is typically 'citizen_id'
+        const usersWithPendingPickups = new Set(pickupsData?.map(p => p.citizen_id).filter(Boolean) || []);
+        console.log('Skipping users with pending pickups:', usersWithPendingPickups.size);
+
+        // 2. Filter and collapse requests
+        const userGroupMap = reqData.reduce((acc, req) => {
+            // Skip if user already has a pending pickup
+            if (usersWithPendingPickups.has(req.user_id)) return acc;
+
+            const div = req.division || req.citizens?.division || 'Unknown';
+            const currentTypes = Array.isArray(req.waste_type) ? req.waste_type : [req.type || 'General'];
+
+            if (!acc[req.user_id]) {
+                acc[req.user_id] = {
+                    ...req,
+                    division: div,
+                    waste_type: [...currentTypes]
+                };
+            } else {
+                // Add new types from this request if not already present
+                currentTypes.forEach(t => {
+                    if (!acc[req.user_id].waste_type.includes(t)) {
+                        acc[req.user_id].waste_type.push(t);
+                    }
+                });
+            }
+            return acc;
+        }, {});
+
+        const finalRequests = Object.values(userGroupMap);
+        console.log('Final Display Requests:', finalRequests.length);
+        setRequests(finalRequests);
+    }
 
     const setupRealtimeSubscription = () => {
         // Subscribe to waste_requests changes
@@ -260,6 +301,15 @@ const Schedule = () => {
                 divisions={divisions}
                 onAssignDriver={handleAutoBatchAssign}
             />
+
+            {/* DEBUG OVERLAY */}
+            <div style={{
+                position: 'fixed', bottom: 20, right: 20, zIndex: 9999,
+                background: 'rgba(0,0,0,0.8)', color: 'white', padding: '12px',
+                borderRadius: '8px', fontSize: '10px', pointerEvents: 'none'
+            }}>
+                DEBUG: ReqCount: {requests.length} | Pickups: {pickups.length} | Drivers: {drivers.length}
+            </div>
 
             {/* Assignment Modal (Popup) */}
             <AssignmentModal
