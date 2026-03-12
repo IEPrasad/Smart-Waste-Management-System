@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator
 } from 'react-native';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons} from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 
 interface DriverChatModalProps {

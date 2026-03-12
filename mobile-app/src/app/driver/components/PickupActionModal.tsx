@@ -6,14 +6,11 @@ import {
     Modal,
     TouchableOpacity,
     TextInput,
-    Dimensions,
     KeyboardAvoidingView,
     Platform
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import SkipReasonModal from './SkipReasonModal';
-
-const { width } = Dimensions.get('window');
 
 interface PickupActionModalProps {
     visible: boolean;
@@ -33,11 +30,11 @@ export default function PickupActionModal({
 
     const [compost, setCompost] = useState('');
     const [recycling, setRecycling] = useState('');
-    const [showSkipModal, setShowSkipModal] = useState(false);
+    const [showSkipModal, setShowSkipModal] = useState(false); // boolean to show skip reasin modal
 
     if (!pickup) return null;
 
-    // 🔒 STRICT INTEGER-ONLY INPUT HANDLER
+    //  STRICT INTEGER-ONLY INPUT HANDLER
     const handleIntegerInput = (text: string, setter: (v: string) => void) => {
         // Allow digits only (no dots, no minus, no spaces)
         const clean = text.replace(/[^0-9]/g, '');
@@ -48,7 +45,7 @@ export default function PickupActionModal({
         const compostVal = compost ? Number(compost) : 0;
         const recyclingVal = recycling ? Number(recycling) : 0;
 
-        // Safety checks (extra protection)
+        // Safety checks (extra protection) , isNan = is Not a number
         if (
             isNaN(compostVal) ||
             isNaN(recyclingVal) ||
@@ -59,6 +56,7 @@ export default function PickupActionModal({
             return;
         }
 
+        //to check if both values are zero
         if (compostVal === 0 && recyclingVal === 0) {
             alert('Please enter at least one weight.');
             return;
@@ -121,7 +119,6 @@ export default function PickupActionModal({
                                     value={compost}
                                     maxLength={6}
                                     autoCorrect={false}
-                                    autoCapitalize="none"
                                     onChangeText={(t) =>
                                         handleIntegerInput(t, setCompost)
                                     }
@@ -136,10 +133,9 @@ export default function PickupActionModal({
                                     style={styles.input}
                                     placeholder="0"
                                     keyboardType="number-pad"
-                                    value={recycling}
+                                    value={recycling}  //connects input to react state
                                     maxLength={6}
                                     autoCorrect={false}
-                                    autoCapitalize="none"
                                     onChangeText={(t) =>
                                         handleIntegerInput(t, setRecycling)
                                     }

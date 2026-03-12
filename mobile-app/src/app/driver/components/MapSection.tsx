@@ -33,11 +33,12 @@ export default function MapSection({ mapRef, currentLocation, hasStarted, pickup
                     origin={currentLocation}
                     destination={{ latitude: currentTarget.lat, longitude: currentTarget.lng }}
                     apikey={apiKey}
-                    strokeWidth={5}
+                    strokeWidth={5} // thickness of route linee
                     strokeColor="#00b0ff"
                 />
             )}
         </MapView>
+        //make sure to only show the route after the driver has started and has a target pickup
     );
 }
 
