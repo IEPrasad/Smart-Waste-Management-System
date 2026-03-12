@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, ActivityIndicator, Dimensions, Image
+    View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, ActivityIndicator
 } from 'react-native';
 import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 
-const { width, height } = Dimensions.get('window');
 
 interface DriverMessagesModalProps {
     visible: boolean;
     onClose: () => void;
     onOpenChat: (pickup: any) => void; // Parent handles opening the actual chat
+    driverId: string | null;
 }
 
 // Data shape for our list

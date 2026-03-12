@@ -38,9 +38,7 @@ export default function WelcomeStartModal({
                     disabled={!canStart}
                     onPress={onStartRoute}
                 >
-                    {/* numberOfLines={1} prevents wrapping
-                        adjustsFontSizeToFit shrinks the font if it's too big
-                    */}
+
                     <Text
                         style={styles.startBtnText}
                         numberOfLines={1}
@@ -78,11 +76,11 @@ const styles = StyleSheet.create({
     subText: { fontSize: 16, color: '#666', textAlign: 'center', marginBottom: 30 },
 
     startBtn: {
-        width: '100%',             // Take up the full width of the card padding
+        width: '100%',
         paddingVertical: 18,
         borderRadius: 40,
-        justifyContent: 'center',  // Vertically center
-        alignItems: 'center',      // Horizontally center
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     startBtnText: {
         color: 'white',
