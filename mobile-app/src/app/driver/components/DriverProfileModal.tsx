@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
-import { uploadDriverPhoto } from '../../../services/driverService';
+import { uploadDriverPhoto } from '@/services/driverService';
 
 import EditProfileModal from './EditProfileModal';
 

@@ -77,7 +77,7 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
     const fetchMessages = async (showLoading = false) => {
         if (showLoading) setLoading(true);
 
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('messages')
             .select('*')
             .eq('pickup_id', pickup.id)

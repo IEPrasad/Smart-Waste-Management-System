@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-    View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, ActivityIndicator, Dimensions
+    View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, ActivityIndicator
 } from 'react-native';
 import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
-
-const { width, height } = Dimensions.get('window');
 
 interface DriverHistoryModalProps {
     visible: boolean;
