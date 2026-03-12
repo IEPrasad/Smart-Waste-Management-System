@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Alert, AppState, AppStateStatus } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, Alert, AppState, AppStateStatus, BackHandler } from 'react-native';
 import MapView from 'react-native-maps';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../../lib/supabase';
@@ -67,6 +67,22 @@ export default function DriverHomeScreen() {
             }
         })();
     }, []);
+
+    // Prevent going back to auth screens
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                Alert.alert('Exit App', 'Are you sure you want to exit?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Exit', onPress: () => BackHandler.exitApp() },
+                ]);
+                return true;
+            };
+
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [])
+    );
 
     // 3. Handle App State (Online/Offline Toggle) + Logs
     useEffect(() => {

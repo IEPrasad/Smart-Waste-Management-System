@@ -1,9 +1,11 @@
+// Import necessary React, React Native components and other custom components
 import React from 'react';
 import { View, Text, ScrollView, Platform, KeyboardAvoidingView, StyleSheet } from 'react-native';
 import InputField from '../InputField';
 import Button from '../Button';
 import { RegisterErrors } from '../../utils/validations';
 
+// Define the types for the data (props) passed into the RegisterStep1 component
 interface Step1Props {
     fullName: string;
     setFullName: (val: string) => void;
@@ -18,6 +20,7 @@ interface Step1Props {
     onNext: () => void;
 }
 
+// Main component that collects basic user information (Name, NIC, Mobile, Email)
 export default function RegisterStep1({
     fullName, setFullName,
     nic, setNic,
@@ -27,19 +30,23 @@ export default function RegisterStep1({
     onNext
 }: Step1Props) {
     return (
+
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={{ flex: 1 }}
         >
+
             <ScrollView
                 contentContainerStyle={styles.content}
                 keyboardShouldPersistTaps="handled"
             >
+
                 <Text style={styles.title}>Let's{'\n'}Get Started</Text>
                 <Text style={styles.subtitle}>
                     We need your details to verify your identity and register you for the waste management service
                 </Text>
 
+                {/* Input field to collect the user's full name */}
                 <InputField
                     label="Full Name"
                     icon="person-outline"
@@ -47,12 +54,14 @@ export default function RegisterStep1({
                     value={fullName}
                     onChangeText={(text) => {
                         setFullName(text);
+                        // Clears any previous error message when the user starts typing
                         if (errors.fullName) setErrors({ ...errors, fullName: undefined });
                     }}
                     error={errors.fullName}
                     required
                 />
 
+                {/* Input field to collect the user's National Identity Card (NIC) number */}
                 <InputField
                     label="NIC Number"
                     icon="card-outline"
@@ -67,6 +76,7 @@ export default function RegisterStep1({
                     required
                 />
 
+                {/* Input field to collect the user's mobile number (displays the Sri Lankan flag) */}
                 <InputField
                     label="Mobile Number"
                     placeholder="07XX XXX XXX"
@@ -86,6 +96,7 @@ export default function RegisterStep1({
                     }
                 />
 
+                {/* Input field to collect the user's email address */}
                 <InputField
                     label="Email"
                     icon="mail-outline"

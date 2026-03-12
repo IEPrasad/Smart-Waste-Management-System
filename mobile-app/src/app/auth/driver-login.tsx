@@ -164,16 +164,58 @@ export default function DriverLoginScreen() {
 
 const styles = StyleSheet.create({
     /* keep your styles as before */
-    container: { flex: 1, backgroundColor: '#fff' },
-    scrollContent: { flexGrow: 1, paddingBottom: 20 },
-    imageContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 15, marginBottom: 20, height: height * 0.25 },
-    image: { width: width * 0.8, height: '100%' },
-    contentContainer: { paddingHorizontal: 24 },
-    title: { fontSize: 26, lineHeight: 35, fontWeight: 'bold', color: '#000', textAlign: 'center', marginBottom: 15 },
-    subtitle: { fontSize: 15, color: '#666', textAlign: 'center', lineHeight: 20, marginBottom: 30, paddingHorizontal: 3 },
-    formContainer: { marginBottom: 20 },
-    footerContainer: { paddingHorizontal: 20, marginTop: 'auto', marginBottom: 20 },
-    footerText: { fontSize: 12, color: '#999', textAlign: 'center', lineHeight: 18 },
+    container: {
+        flex: 1,
+        backgroundColor: '#fff'
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingBottom: 20
+    },
+    imageContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 15,
+        marginBottom: 20,
+        height: height * 0.25
+    },
+    image: {
+        width: width * 0.8,
+        height: '100%'
+    },
+    contentContainer: {
+        paddingHorizontal: 24
+    },
+    title: {
+        fontSize: 26,
+        lineHeight: 35,
+        fontWeight: 'bold',
+        color: '#000',
+        textAlign: 'center',
+        marginBottom: 15
+    },
+    subtitle: {
+        fontSize: 15,
+        color: '#666',
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 30,
+        paddingHorizontal: 3
+    },
+    formContainer: {
+        marginBottom: 20
+    },
+    footerContainer: {
+        paddingHorizontal: 20,
+        marginTop: 'auto',
+        marginBottom: 20
+    },
+    footerText: {
+        fontSize: 12,
+        color: '#999',
+        textAlign: 'center',
+        lineHeight: 18
+    },
     forgotPasswordContainer: {
         alignItems: 'flex-end',
         marginBottom: 20,

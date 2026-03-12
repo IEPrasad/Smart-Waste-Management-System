@@ -9,34 +9,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 
-// Services & Utils
+// Services & Utils: Used for API calls and input validation
 import { registerCitizen } from '../../services/authService';
 import { validateStep1, validateStep2, validateStep3, RegisterErrors } from '../../utils/validations';
 
-// Components
+// Shared Components used in the UI
 import BackButton from '../../components/BackButton';
 import ProgressBar from '../../components/ProgressBar';
 
-// Sub-components for Multi-step
+// Sub-components for Multi-step registration process
 import Step1 from '../../components/auth/RegisterStep1';
 import Step2 from '../../components/auth/RegisterStep2';
 import Step3 from '../../components/auth/RegisterStep3';
 
+// Main wrapper component that manages the entire multi-step registration flow
 export default function RegisterWrapper() {
-    const router = useRouter();
+    const router = useRouter(); // Used for navigation between screens
 
     // -- State: Progress --
+    // Tracks the current step (1, 2, or 3), loading status, and any validation errors
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<RegisterErrors>({});
 
-    // -- State: Step 1 Data --
+    // -- State: Step 1 Data (Personal Info) --
     const [fullName, setFullName] = useState('');
     const [nic, setNic] = useState('');
     const [mobile, setMobile] = useState('');
     const [email, setEmail] = useState('');
 
-    // -- State: Step 2 Data --
+    // -- State: Step 2 Data (Location Info) --
     const [assessmentNumber, setAssessmentNumber] = useState('');
     const [division, setDivision] = useState<any>(null); // e.g. { id: 1, name: 'Div1' }
     const [gnDivision, setGnDivision] = useState<any>(null); // e.g. { id: 'G-1', name: 'GN1', division_id: 1 }
@@ -44,22 +46,25 @@ export default function RegisterWrapper() {
     const [latitude, setLatitude] = useState<number | null>(null);
     const [longitude, setLongitude] = useState<number | null>(null);
 
-    // -- State: Step 3 Data --
+    // -- State: Step 3 Data (Security & Agreement) --
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreed, setAgreed] = useState(false);
 
-    // --- Handlers ---
+
+
+    // Validates Step 1 data and moves to Step 2 if everything is correct
     const handleNextStep1 = () => {
         const { isValid, errors: step1Errors } = validateStep1(fullName, nic, mobile, email);
         if (isValid) {
-            setErrors({});
-            setCurrentStep(2);
+            setErrors({}); // Clear any previous errors
+            setCurrentStep(2); // Go to next step
         } else {
-            setErrors(step1Errors);
+            setErrors(step1Errors); // Show validation errors to the user
         }
     };
 
+    // Validates Step 2 data and moves to Step 3 if everything is correct
     const handleNextStep2 = () => {
         const { isValid, errors: step2Errors } = validateStep2(
             assessmentNumber,
@@ -77,6 +82,7 @@ export default function RegisterWrapper() {
         }
     };
 
+    // Validates Step 3 data and submits the final registration form to the backend API
     const handleSubmit = async () => {
         const { isValid, errors: step3Errors } = validateStep3(password, confirmPassword, agreed);
         if (!isValid) {
@@ -84,9 +90,9 @@ export default function RegisterWrapper() {
             return;
         }
 
-        setLoading(true);
+        setLoading(true); // Show a loading indicator while submitting
 
-        // Combine all data
+        // Combine all data collected from the 3 steps into one object
         const userData = {
             fullName: fullName.trim(),
             email: email.trim(),
@@ -101,9 +107,11 @@ export default function RegisterWrapper() {
         };
 
         try {
+            // Call the authentication service to register the citizen
             const result = await registerCitizen(userData);
 
             if (result.success) {
+                // If successful, show an alert and redirect to the login screen
                 Alert.alert(
                     'Success',
                     'Account created successfully! Please wait for admin approval.',
@@ -115,15 +123,16 @@ export default function RegisterWrapper() {
         } catch (error) {
             Alert.alert('Error', 'Something went wrong. Please try again.');
         } finally {
-            setLoading(false);
+            setLoading(false); // Hide the loading indicator
         }
     };
 
+    // Handles the back button press behavior
     const handleBack = () => {
         if (currentStep > 1) {
-            setCurrentStep(currentStep - 1);
+            setCurrentStep(currentStep - 1); // Go back to the previous step within the form
         } else {
-            router.back();
+            router.back(); // Go back to the previous screen in the app navigation
         }
     };
 
@@ -131,18 +140,17 @@ export default function RegisterWrapper() {
         <SafeAreaView style={styles.container}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Header */}
             <View style={styles.header}>
                 <BackButton onPress={handleBack} />
                 <Text style={styles.headerTitle}>Registration</Text>
                 <View style={{ width: 24 }} />
             </View>
 
-            {/* Progress Bar */}
+            {/* Visual indicator showing the user which step they are currently on */}
             <ProgressBar currentStep={currentStep as 1 | 2 | 3} />
 
-            {/* Step Rendering */}
             <View style={styles.contentWrapper}>
+                {/* Render Step 1 only if currentStep is 1 */}
                 {currentStep === 1 && (
                     <Step1
                         fullName={fullName} setFullName={setFullName}
@@ -154,6 +162,7 @@ export default function RegisterWrapper() {
                     />
                 )}
 
+                {/* Render Step 2 only if currentStep is 2 */}
                 {currentStep === 2 && (
                     <Step2
                         assessmentNumber={assessmentNumber} setAssessmentNumber={setAssessmentNumber}
@@ -167,6 +176,7 @@ export default function RegisterWrapper() {
                     />
                 )}
 
+                {/* Render Step 3 only if currentStep is 3 */}
                 {currentStep === 3 && (
                     <Step3
                         password={password} setPassword={setPassword}
@@ -181,6 +191,7 @@ export default function RegisterWrapper() {
         </SafeAreaView>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "WastE-wise-app",
+    "name": "Waste Wise",
     "slug": "WastE-wise-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./src/assets/images/icon.png",
+    "icon": "./src/assets/images/logo-icon.png",
     "scheme": "wastewiseapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,

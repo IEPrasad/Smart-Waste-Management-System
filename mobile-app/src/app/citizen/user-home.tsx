@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    StatusBar,
-    Platform,
-    Image,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  StatusBar,
+  Platform,
+  Image,
+  Alert,
+  BackHandler,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -53,6 +55,22 @@ export default function UserHomeScreen() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const [userName, setUserName] = useState<string | null>(null);
     const mapRef = useRef<MapView>(null);
+
+    // Prevent going back to auth screens
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                Alert.alert('Exit App', 'Are you sure you want to exit?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Exit', onPress: () => BackHandler.exitApp() },
+                ]);
+                return true;
+            };
+
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [])
+    );
 
     useEffect(() => {
         fetchActivePickup();

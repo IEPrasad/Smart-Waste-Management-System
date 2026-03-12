@@ -1,3 +1,4 @@
+// Import necessary React, React Native components, and other dependencies
 import React, { useState } from 'react';
 import {
     StyleSheet,
@@ -14,6 +15,7 @@ import InputField from '../InputField';
 import Button from '../Button';
 import { RegisterErrors } from '../../utils/validations';
 
+// Define the types for the props passed to the RegisterStep3 component
 interface Step3Props {
     password: string;
     setPassword: (val: string) => void;
@@ -27,6 +29,7 @@ interface Step3Props {
     loading: boolean;
 }
 
+// Final step of registration: Collects password and agreement to terms
 export default function RegisterStep3({
     password, setPassword,
     confirmPassword, setConfirmPassword,
@@ -35,10 +38,12 @@ export default function RegisterStep3({
     onSubmit,
     loading
 }: Step3Props) {
+    // States to toggle the visibility of the password and confirm password fields
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     return (
+        // KeyboardAvoidingView prevents the UI from being covered when the phone's keyboard opens
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}
@@ -48,21 +53,25 @@ export default function RegisterStep3({
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
             >
+                {/* Main title and subtitle of the page */}
                 <Text style={styles.title}>Secure{'\n'}Your Account</Text>
                 <Text style={styles.subtitle}>
                     Create a strong password to protect your account details and personal details.
                 </Text>
 
+                {/* Input field to collect and create a new password */}
                 <InputField
                     label="Create Password"
                     placeholder="*************"
-                    secureTextEntry={!showPassword}
+                    secureTextEntry={!showPassword} // Hides the password text if showPassword is false
                     value={password}
                     onChangeText={(text) => {
                         setPassword(text);
+                        // Clear the specific error when the user starts typing
                         if (errors.password) setErrors({ ...errors, password: undefined });
                     }}
                     rightAdornment={
+                        // Button to toggle password visibility (eye icon)
                         <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                             <Ionicons
                                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -75,6 +84,7 @@ export default function RegisterStep3({
                     error={errors.password}
                 />
 
+                {/* Informational text about password requirements */}
                 <View style={styles.infoRow}>
                     <Ionicons name="information-circle-outline" size={20} color="#000" />
                     <Text style={styles.infoText}>
@@ -82,6 +92,7 @@ export default function RegisterStep3({
                     </Text>
                 </View>
 
+                {/* Input field to confirm the entered password */}
                 <InputField
                     label="Confirm Password"
                     placeholder="*************"
@@ -92,6 +103,7 @@ export default function RegisterStep3({
                         if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: undefined });
                     }}
                     rightAdornment={
+                        // Button to toggle confirm password visibility (eye icon)
                         <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
                             <Ionicons
                                 name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -104,6 +116,7 @@ export default function RegisterStep3({
                     error={errors.confirmPassword}
                 />
 
+                {/* Checkbox and text for agreeing to Terms of Service and Privacy Policy */}
                 <View style={styles.termsRow}>
                     <TouchableOpacity
                         onPress={() => {
