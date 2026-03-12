@@ -7,7 +7,7 @@ interface ChangePasswordProps {
     onClose: () => void;
     email: string;
 }
-
+//parent componentt was EditProfileModal
 export default function ChangePasswordModal({ visible, onClose, email }: ChangePasswordProps) {
     const [oldPass, setOldPass] = useState('');
     const [newPass, setNewPass] = useState('');
