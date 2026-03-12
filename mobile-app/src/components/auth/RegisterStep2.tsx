@@ -1,3 +1,4 @@
+// Import necessary React, React Native components, and other dependencies
 import React, { useState, useEffect } from 'react';
 import {
     StyleSheet,
@@ -11,8 +12,7 @@ import {
     FlatList,
     TouchableWithoutFeedback,
     ActivityIndicator,
-    Alert,
-    Dimensions
+    Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
@@ -23,6 +23,7 @@ import SelectField from '../SelectField';
 import Button from '../Button';
 import { RegisterErrors } from '../../utils/validations';
 
+// Define the types for the props passed to the RegisterStep2 component
 interface Step2Props {
     assessmentNumber: string;
     setAssessmentNumber: (val: string) => void;
@@ -41,6 +42,7 @@ interface Step2Props {
     onNext: () => void;
 }
 
+// Second step of registration: Collects location-related information (Assessment No, Division, Location)
 export default function RegisterStep2({
     assessmentNumber, setAssessmentNumber,
     division, setDivision,
@@ -52,18 +54,22 @@ export default function RegisterStep2({
     onNext
 }: Step2Props) {
 
+    // Define temporary internal states required by the component
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
     const [showDivisionPicker, setShowDivisionPicker] = useState(false);
     const [showGnDivisionPicker, setShowGnDivisionPicker] = useState(false);
     const [showMapModal, setShowMapModal] = useState(false);
-    const [tempLatitude, setTempLatitude] = useState<number | null>(null);
-    const [tempLongitude, setTempLongitude] = useState<number | null>(null);
+
+    // Initialize temporary map coordinates using previously selected location (if any)
+    const [tempLatitude, setTempLatitude] = useState<number | null>(latitude);
+    const [tempLongitude, setTempLongitude] = useState<number | null>(longitude);
 
     const [divisions, setDivisions] = useState<any[]>([]);
     const [gnDivisions, setGnDivisions] = useState<any[]>([]);
     const [isLoadingDivisions, setIsLoadingDivisions] = useState(true);
     const [isLoadingGnDivisions, setIsLoadingGnDivisions] = useState(false);
 
+    // Fetch Divisions from the Supabase database when the component first loads
     useEffect(() => {
         const fetchDivisions = async () => {
             try {
@@ -83,6 +89,7 @@ export default function RegisterStep2({
         fetchDivisions();
     }, []);
 
+    // Fetch the relevant GN Divisions when a Division is selected by the user
     useEffect(() => {
         const fetchGnDivisions = async () => {
             if (!division) {
@@ -107,22 +114,26 @@ export default function RegisterStep2({
         fetchGnDivisions();
     }, [division]);
 
+    // Handle Division selection from the list
     const handleDivisionSelect = (item: any) => {
         setDivision(item);
-        setGnDivision(null);
+        setGnDivision(null); // Clear previously selected GN Division when a new Division is selected
         setShowDivisionPicker(false);
         if (errors.division) setErrors({ ...errors, division: undefined });
     };
 
+    // Handle GN Division selection from the list
     const handleGnDivisionSelect = (item: any) => {
         setGnDivision(item);
         setShowGnDivisionPicker(false);
         if (errors.gnDivision) setErrors({ ...errors, gnDivision: undefined });
     };
 
+    // Use phone GPS to find current location
     const handleGetLocation = async () => {
         setIsLoadingLocation(true);
         try {
+            // Check for location permissions
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 Alert.alert('Permission Denied', 'Please enable location permissions in settings.');
@@ -130,13 +141,14 @@ export default function RegisterStep2({
                 return;
             }
 
+            // Get current position if permission is granted
             let location = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High,
             });
 
             setTempLatitude(location.coords.latitude);
             setTempLongitude(location.coords.longitude);
-            setShowMapModal(true); // Open the map modal after getting the location
+            setShowMapModal(true); // Open the map modal
 
         } catch (error) {
             Alert.alert('Error', 'Failed to get location. Please try again.');
@@ -145,6 +157,7 @@ export default function RegisterStep2({
         }
     };
 
+    // Confirm the selected location from the map
     const handleConfirmLocation = () => {
         setLatitude(tempLatitude);
         setLongitude(tempLongitude);
@@ -155,6 +168,7 @@ export default function RegisterStep2({
         setShowMapModal(false);
     };
 
+    // Render the Map Modal/Popup
     const renderMapModal = () => (
         <Modal visible={showMapModal} animationType="slide" transparent={false}>
             <View style={styles.fullScreenModal}>
@@ -167,6 +181,7 @@ export default function RegisterStep2({
 
                 {tempLatitude && tempLongitude ? (
                     <View style={styles.fullMapContainer}>
+                        {/* The actual Map view component */}
                         <MapView
                             style={styles.map}
                             initialRegion={{
@@ -185,6 +200,7 @@ export default function RegisterStep2({
                                 title="Home Location"
                             />
                         </MapView>
+                        {/* Red pin marker centered on the map */}
                         <View style={styles.mapOverlay}>
                             <Ionicons name="location" size={40} color="#FF0000" style={styles.centerMarker} />
                         </View>
@@ -204,6 +220,7 @@ export default function RegisterStep2({
         </Modal>
     );
 
+    // List Popup  for selecting a Division
     const renderDivisionModal = () => (
         <Modal visible={showDivisionPicker} transparent animationType="slide">
             <TouchableWithoutFeedback onPress={() => setShowDivisionPicker(false)}>
@@ -241,6 +258,7 @@ export default function RegisterStep2({
         </Modal>
     );
 
+    // List Popup  for selecting a GN Division
     const renderGnDivisionModal = () => (
         <Modal visible={showGnDivisionPicker} transparent animationType="slide">
             <TouchableWithoutFeedback onPress={() => setShowGnDivisionPicker(false)}>
@@ -289,11 +307,13 @@ export default function RegisterStep2({
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
+                    {/* Main title and subtitle of the page */}
                     <Text style={styles.title}>Location Info</Text>
                     <Text style={styles.subtitle}>
                         Please provide your location details to ensure accurate service allocation.
                     </Text>
 
+                    /* Input field to collect the Assessment Number */
                     <InputField
                         label="Assessment Number"
                         icon="document-text-outline"
@@ -307,6 +327,7 @@ export default function RegisterStep2({
                         required
                     />
 
+                    /* Field to select the Division */
                     <SelectField
                         label="Division"
                         icon="location-outline"
@@ -318,6 +339,7 @@ export default function RegisterStep2({
                         disabled={isLoadingDivisions}
                     />
 
+                    /* Field to select the GN Division */
                     <SelectField
                         label="Grama Niladhari Division"
                         icon="business-outline"
@@ -329,7 +351,7 @@ export default function RegisterStep2({
                         disabled={!division || isLoadingGnDivisions}
                     />
 
-                    {/* Location Button */}
+                    /* GPS Location selection button */
                     <View style={styles.fieldContainer}>
                         <Text style={styles.label}>Home Location <Text style={{ color: 'red' }}>*</Text></Text>
                         <TouchableOpacity
@@ -352,10 +374,12 @@ export default function RegisterStep2({
                 </ScrollView>
             </KeyboardAvoidingView>
 
+            {/* Section containing the button to proceed to the next step */}
             <View style={styles.footer}>
                 <Button title="Next" onPress={onNext} />
             </View>
 
+            {/* Render the Modal Popups created above */}
             {renderMapModal()}
             {renderDivisionModal()}
             {renderGnDivisionModal()}
@@ -363,6 +387,7 @@ export default function RegisterStep2({
     );
 }
 
+// Visual appearance, colors, and layout definitions (Styles) for the component
 const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
