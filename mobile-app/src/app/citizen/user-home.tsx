@@ -7,8 +7,10 @@ import {
   StatusBar,
   Platform,
   Image,
+  Alert,
+  BackHandler,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -56,6 +58,22 @@ export default function UserHomeScreen() {
     const interval = setInterval(fetchActivePickup, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Prevent going back to auth screens
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert('Exit App', 'Are you sure you want to exit?', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Exit', onPress: () => BackHandler.exitApp() },
+        ]);
+        return true;
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const fetchUserAvatar = async () => {
     try {

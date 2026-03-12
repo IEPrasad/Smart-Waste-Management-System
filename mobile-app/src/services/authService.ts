@@ -159,25 +159,14 @@ export const updatePassword = async (newPassword: string) => {
 
 export const checkEmailExists = async (email: string) => {
     try {
-        // Check citizens table
-        const { data: citizenData, error: citizenError } = await supabase
-            .from('citizens')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle();
+        // Call the secure RPC function to check email existence without hitting RLS blocks
+        const { data, error } = await supabase.rpc('check_email_exists_in_tables', {
+            lookup_email: email
+        });
 
-        if (citizenData) return { exists: true };
+        if (error) throw error;
 
-        // Check drivers table
-        const { data: driverData, error: driverError } = await supabase
-            .from('driver')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle();
-
-        if (driverData) return { exists: true };
-
-        return { exists: false };
+        return { exists: data };
     } catch (error: any) {
         console.error("Check Email Error:", error.message);
         return { exists: false, error: error.message };
