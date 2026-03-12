@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
     View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, TextInput, KeyboardAvoidingView, Platform, ActivityIndicator
 } from 'react-native';
-import { MaterialIcons, Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { MaterialIcons, Ionicons} from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
 
 interface DriverChatModalProps {
@@ -77,7 +77,7 @@ export default function DriverChatModal({ visible, pickup, driverId, onClose }: 
     const fetchMessages = async (showLoading = false) => {
         if (showLoading) setLoading(true);
 
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('messages')
             .select('*')
             .eq('pickup_id', pickup.id)

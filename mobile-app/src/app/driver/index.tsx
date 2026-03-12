@@ -46,7 +46,7 @@ export default function DriverHomeScreen() {
     const [chatPickup, setChatPickup] = useState<any>(null);
 
     // 🛰️ CUSTOM HOOK: Handles GPS watching & DB syncing automatically
-    // The hook already handles the 5s update to 'updated_at' in driver_live_location
+    // The hool handles the 5s update to 'updated_at' in driver_live_location
     const currentLocation = useDriverTracking(driverId, hasStarted);
 
     // 2. Initial Data Load
@@ -149,11 +149,11 @@ export default function DriverHomeScreen() {
             status,
             completed_at: new Date(),
         }).eq('id', selectedPickup.id);
-
+//close the popup
         setPopupVisible(false);
         const remaining = pickups.filter(p => p.id !== selectedPickup.id);
         setPickups(remaining);
-
+//find nexxt pickup
         if (remaining.length > 0 && currentLocation) {
             const next = findNearest(currentLocation.latitude, currentLocation.longitude, remaining);
             setCurrentTarget(next);
@@ -242,6 +242,7 @@ export default function DriverHomeScreen() {
                 visible={isMessagesVisible}
                 onClose={() => setMessagesVisible(false)}
                 onOpenChat={(data) => { setChatPickup(data); setChatVisible(true); }}
+                driverId={driverId}
             />
 
             <DriverChatModal visible={isChatVisible} pickup={chatPickup} driverId={driverId} onClose={() => setChatVisible(false)} />
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20, elevation: 5, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5,
     },
     headerTitle: { fontWeight: 'bold', fontSize: 14, color: '#333' },
-    iconBtn: { padding: 5 },
+    iconBtn: { padding: 5 },//a bigger touch target
     profileCircle: {
         width: 35, height: 35, borderRadius: 18, backgroundColor: '#eee',
         justifyContent: 'center', alignItems: 'center'

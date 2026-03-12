@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { FontAwesome5, MaterialIcons } from '@expo/vector-icons';
 import { supabase } from '../../../../lib/supabase';
-import { uploadDriverPhoto } from '../../../services/driverService';
+import { uploadDriverPhoto } from '@/services/driverService';
 
 import EditProfileModal from './EditProfileModal';
 
@@ -37,20 +37,26 @@ export default function DriverProfileModal({ visible, onClose, onLogout, onHisto
             const { data, error } = await supabase
                 .from('driver')
                 .select(`
-                    full_name,
-                    email,
-                    mobile_number,
-                    photo_url,
-                    vehicles (
-                        vehicle_no,
-                        model,
-                        vehicle_type
-                    )
-                `)
+                full_name,
+                email,
+                mobile_number,
+                photo_url,
+                vehicles (
+                    vehicle_no,
+                    model,
+                    vehicle_type
+                )
+            `)
                 .eq('id', user.id)
                 .single();
 
             if (data) {
+                // ✅ THE FIX: Append a unique timestamp to force a refresh
+                if (data.photo_url) {
+                    const timestamp = new Date().getTime();
+                    data.photo_url = `${data.photo_url}?t=${timestamp}`;
+                }
+
                 setProfile(data);
             } else {
                 console.error(error);
