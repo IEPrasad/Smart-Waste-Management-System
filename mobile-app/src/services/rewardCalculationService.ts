@@ -106,14 +106,12 @@ export const RewardCalculationService = {
           `
           id,
           pickup_id,
+          driver_id,
           compost_weight,
           recycling_weight,
           status,
           note,
-          created_at,
-          driver (
-            full_name
-          )
+          created_at
         `
         )
         .eq('citizen_name', citizenName)
@@ -133,6 +131,22 @@ export const RewardCalculationService = {
           data: [],
           error: null,
         };
+      }
+
+      const driverIds = [...new Set(data.map(d => d.driver_id).filter(Boolean))];
+      let driversMap: Record<string, string> = {};
+      
+      if (driverIds.length > 0) {
+        const { data: driversData } = await supabase
+          .from('driver')
+          .select('id, full_name')
+          .in('id', driverIds);
+          
+        if (driversData) {
+          driversData.forEach(d => {
+            driversMap[d.id] = d.full_name;
+          });
+        }
       }
 
       const transactions: RewardTransaction[] = data.map((log: any) => {
@@ -163,7 +177,7 @@ export const RewardCalculationService = {
           compost_earnings: earnings.compost,
           recycling_earnings: earnings.recycling,
           total_earnings: earnings.total,
-          driver_name: log.driver?.full_name || 'Unknown Driver',
+          driver_name: (log.driver_id && driversMap[log.driver_id]) ? driversMap[log.driver_id] : 'Unknown Driver',
           note: log.note,
         };
       });

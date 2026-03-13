@@ -73,10 +73,7 @@ export const PickupHistoryService = {
           recycling_weight,
           status,
           note,
-          created_at,
-          driver (
-            full_name
-          )
+          created_at
         `)
         .eq('citizen_name', citizenData.full_name)
         .in('status', ['completed', 'skipped'])
@@ -95,6 +92,22 @@ export const PickupHistoryService = {
           data: [],
           error: null,
         };
+      }
+
+      const driverIds = [...new Set(data.map(d => d.driver_id).filter(Boolean))];
+      let driversMap: Record<string, string> = {};
+      
+      if (driverIds.length > 0) {
+        const { data: driversData } = await supabase
+          .from('driver')
+          .select('id, full_name')
+          .in('id', driverIds);
+          
+        if (driversData) {
+          driversData.forEach(d => {
+            driversMap[d.id] = d.full_name;
+          });
+        }
       }
 
       // Transform data to PickupHistoryItem format
@@ -116,7 +129,7 @@ export const PickupHistoryService = {
           compost_weight: log.compost_weight || 0,
           recycling_weight: log.recycling_weight || 0,
           total_weight: (log.compost_weight || 0) + (log.recycling_weight || 0),
-          driver_name: log.driver?.full_name || 'Unknown Driver',
+          driver_name: (log.driver_id && driversMap[log.driver_id]) ? driversMap[log.driver_id] : 'Unknown Driver',
           note: log.note,
         };
       });
